@@ -1,0 +1,216 @@
+%!PS-Adobe-3.0
+%%Title: preludeArray.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeArray <<>> def
+%preludeArray begin
+
+
+% [a] /!n a[n]
+/!0 {0 get}.
+% [a] num /!0+= - {
+/!0+= {
+	1 index 0 get 	% [a] num val
+	add 0 exch 		% [a] 0 sum
+	put
+}.
+
+/!1 {1 get}.
+% [a] num /!1+= - {
+/!1+= {
+	1 index 1 get 	% [a] num val
+	add 1 exch 		% [a] 1 sum
+	put
+}.
+
+/!2 {2 get}.
+% [a] num /!2+= - {
+/!2+= {
+	1 index 2 get 	% [a] num val
+	add 2 exch 		% [a] 2 sum
+	put
+}.
+
+/!3 {3 get}.
+% [a] num /!3+= - {
+/!3+= {
+	1 index 3 get 	% [a] num val
+	add 3 exch 		% [a] 3 sum
+	put
+}.
+
+/!x {!0} .
+/!x+= {!0+=} .
+/!y {!1} .
+/!y+= {!1+=} .
+/!w {!2} .
+/!w+= {!2+=} .
+/!h {!3} .
+/!h+= {!3+=} .
+
+/!t {!0} .
+/!t+= {!0+=} .
+/!l {!1} .
+/!l+= {!1+=} .
+/!b {!2} .
+/!b+= {!2+=} .
+/!r {!3} .
+/!r+= {!3+=} .
+
+
+% [a] /!_ a1..an
+/!_ {aload pop}.
+
+
+% [array1 array2 ... arrayN] proc /a.forall* proc()..proc()
+/a.forall* {
+	mark mark 4 -1 roll { uncons counttomark 1 add 1 roll } forall ]		% proc mark a1..an [[tail]]
+	% end of iteration check
+	{dup 0 get length 0 eq { pop exit } if} /exec cvx 						% proc mark a1..an [[tail]] check exec
+	counttomark 2 add -2 roll 												% a1..an [[tail]] check exec proc mark
+	% create the continuation
+	pop dup mark 
+	/exec cvx 																% a1..an [[tail]] check exec proc proc mark exec
+	7 3 roll																% a1..an proc mark exec [[tail]] check exec proc
+	/a.forall* cvx
+	] 
+	cvx  		% a1..an proc { exec [[tail]] check.. proc a.forall }
+	exec
+}.
+
+
+% decoupled for-loop/iterator-variable construct
+% https://groups.google.com/forum/#!searchin/comp.lang.postscript/looping$20context|sort:date/comp.lang.postscript/3gP89-WCRdY/n9hPXAncAAAJ
+%
+% [array1 array2 ... arrayN] proc /a.forall proc()..proc()
+/a.forall {
+	1 index length 0 eq { pop pop } { % ifelse 				length(ass) > 0
+		1 index 0 get length 0  eq { pop pop } { % ifelse	length(ass[0]) > 0
+			{ a.forall* } loop
+		} ifelse
+	} ifelse
+}.
+
+
+% any any /deepEq bool
+/deepEq { 
+	2 copy type exch type ne { {eq}	} { % ifelse
+		dup type /arraytype ne { {eq} } { % ifelse
+			2 copy length exch length ne { {eq} } { % ifelse
+				% if we got to here then we have two array objects of equal lengths to compare 
+				% NB: {} type == /arraytype
+				[ &312 ] {true} exch
+				{
+					deepEq not { 
+						pop {false} exit 
+					} if 
+				} a.forall
+			} ifelse
+		} ifelse
+	} ifelse
+	exec
+}.
+
+
+% Assertions
+[
+	{ {1 2.0 /arraytype} [1 2 (arraytype)] deepEq }
+	{ {1 2.0 [/arraytype {1 2 add}]} [1 2 [(arraytype) {1 2 add}]] deepEq not }
+	{ [1 2.0 [/arraytype {1 2 add}]] [1 2 [(arraytype) {1 2 add}]] deepEq } 
+] d.assert!
+
+
+% num|string num|string /compare -1|0|1
+/compare {
+	2 copy lt { pop pop -1 } { eq {0} {1} ifelse } ifelse
+}.
+
+
+% any any {cmp} /deepCmp -1|0|1
+/deepCmp {
+	3 1 roll 	% {cmp} any any
+	2 copy type exch type ne { 3 -1 roll } { % ifelse
+		dup type /arraytype ne { 3 -1 roll } { % ifelse
+			2 copy length exch length ne { 3 -1 roll } { % ifelse
+				% if we got to here then we have two array objects of equal lengths to compare
+				% NB: {} type == /arraytype
+				[ &312 ] 0 exch 		% {cmp} 0 [any any]
+				{
+					deepCmp dup 0 ne { 
+						exch pop exit 	% exec of constant yield constant
+					} {
+						pop
+					} ifelse
+				} 4 -1 roll 			%  0 [any any] {loop-body} {cmp}
+				cons
+				a.forall
+			} ifelse
+		} ifelse
+	} ifelse
+	exec
+}.
+
+
+% Assertions
+[
+	{ [1 2 3] [1 2 3] /compare ' deepCmp 0 eq }
+	{ [1 2 3] [1 2 4] /compare ' deepCmp -1 eq }
+	{ [1 2 [(BAB)]] [1 2 [(ABA)]] /compare ' deepCmp 1 eq } 
+] d.assert!
+
+
+% array1 array2 /a.append array1+array2
+/a.append {
+	exch
+	[ 3 1 roll 
+		aload length
+		% [ array2 a1_n..a1_1 n
+		1 add -1 roll
+		aload pop
+	]
+} bind def
+
+
+% array val /a.find index true | false
+/a.find {
+	false
+	3 1 roll 0		% false array val 0 
+	3 -1 roll
+	% false val 0 array
+	{ % false val index elem
+		2 index eq { 	% false val index
+			true
+			4 -2 roll
+			exit
+		} {
+			1 add
+		} ifelse
+	} forall
+	pop pop
+}.
+
+
+% Assertions
+[ 
+	{ [[1 2 3 4] 3 a.find] [2 true] deepEq } 
+	{ [[1 2 3 4] 5 a.find] [false] deepEq } 
+] d.assert!
+
+
+%end	% preludeArray
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

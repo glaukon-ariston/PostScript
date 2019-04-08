@@ -1,0 +1,45 @@
+%!PS-Adobe-3.0
+%%Title: preludeFont.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeFont <<>> def
+%preludeFont begin
+
+
+% fontSize /setFontSize _
+/setFontSize {
+	currentfont /FontMatrix get 0 get	% fontSize currentFontSize
+	div % fontSize/currentFontSize
+	currentfont exch scalefont setfont 
+}.
+
+
+% string /textSize width height
+/textSize {
+	gsave                                  % save graphic context
+		0 0 moveto                         % move to some point 
+		false charpath flattenpath pathbbox		% gets text path bounding box (LLx LLy URx URy)
+		3 1 roll sub					% LLx URx URy-LLy
+		3 -1 roll exch sub				% URy-LLy URx-LLx
+		exch
+	grestore                               % restore graphic context
+}.
+
+
+%end	% preludeFont
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

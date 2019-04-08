@@ -1,0 +1,351 @@
+%!PS-Adobe-3.0
+%%Title: preludeBootstrap.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeBootstrap <<>> def
+%preludeBootstrap begin
+
+
+% def key into the current dictionary
+% key value /. _
+/. {
+	dup xcheck { bind } if def
+} bind def
+
+
+% def key into the current dictionary
+% value key /; _
+/; {
+	exch def
+}.
+
+
+% def key into the current dictionary
+% value key /xdef _
+/xdef {
+	exch def
+}.
+
+
+% def key into the current dictionary
+% value key /xbdef _
+/xbdef {
+	exch bind def
+}.
+
+
+% LISP: quote (return the reference without evaluation)
+% key /' value
+/' {
+	load
+}.
+
+
+% def names into the current dictionary
+% value1..valueN [nameN..name1] /$= _
+/$= {
+	//xdef forall
+}.
+
+
+%% array /a.reverse array 
+%/a.reverse {
+%	{} exch {exch [3 1 roll aload pop]} forall
+%}.
+
+
+% array /a.reverse array 
+/a.reverse {
+	[ exch
+		2 2 1 roll
+		{ % mark .. index operand
+			exch dup 1 add 3 1 roll
+			% [ .. index elem
+			1 roll
+		} forall
+		pop
+	]
+}.
+
+
+% value1..valueN [name1..nameN] /let* _
+/let* {
+	a.reverse $=
+}.
+
+
+% Make sure you end the implicitly created dictionary!
+% value1..valueN [name1..nameN] /let _
+/let {
+	dup length dict begin 
+	let*
+}.
+
+
+%def names into the current dictionary
+% value1..valueN [name1..nameN] /#= _
+/#= {
+	a.reverse $=
+}.
+
+
+% [(a) (b) ... (z)] /s.concat (ab...z)
+/s.concat { 
+    0 1 index { length add } forall string     
+    0 3 2 roll 				% s 0 [s]       
+    { 						% s len s'
+        3 copy putinterval 	% s len s'
+        length add 
+    } forall pop  
+}.
+
+
+% https://www.tinaja.com/glib/strconv.pdf
+% Create a new string the length of the array. Make the string into a 
+% virtual file that can be written to. Then stuff the array integers
+% into the string one by one.
+
+% array string /s.fromArray* string
+/s.fromArray* { 
+    dup /NullEncode filter      % make a file out of string
+    % array string file
+    3 -1 roll                    % string file array 
+    { 1 index exch write }      % integers to string
+    forall 
+    closefile
+}.
+
+
+% array /s.fromArray string
+/s.fromArray { 
+    dup length string           % new string of right size
+    s.fromArray*
+}.
+
+
+% Polymorphic aload
+% [a1..an]|proc|string /a._ a1..an [a1..an]|proc|string
+/a._ {
+	dup type /stringtype ne {aload} { % ifelse
+		mark exch dup {} forall 				% mark (a) a1..an 
+		counttomark 1 add -2 roll 				% a1..an mark (a)
+		exch pop
+	} ifelse
+} bind def
+
+
+% https://codereview.stackexchange.com/questions/12249/concatenative-postscript-library
+% https://groups.google.com/forum/#!msg/comp.lang.postscript/SjXE6-Azoz0/uq-4r5FfVM4J
+%
+% The a.deepCopy makes a modifiable deep copy of a procedure or an array.
+% Bind makes the original procedure (as it does to all subarrays 
+% of the procedure) readonly.
+%
+% array|proc /a.deepCopy array|proc
+/a.deepCopy { 
+    dup xcheck exch 
+    dup length array copy 
+    dup length 1 sub 0 exch 1 exch { % for       % a i 
+        2 copy 2 copy get dup type /arraytype eq % a i a i e ? 
+        { % ifelse 
+            a.deepCopy put 
+        } 
+        { 
+            pop pop pop 
+        } ifelse 
+        pop 
+    } for 
+    exch { cvx } if 
+}.
+
+
+% The a.dictBind takes an array and a dictionary and maps the array 
+% (recursively) through the dictionary (it replaces a key name
+% with the key's value).
+% 
+% Recursively reify keys in <array> found in <dict> 
+% array dict /a.dictBind - 
+/a.dictBind { 
+    1 index length 1 sub  0 1  3 -1 roll { % for 0 1 length-1 
+        3 copy  3 -1 roll  exch    % a d i d a i 
+        get                        % a d i d e 
+        2 copy known               % a d i d e ? 
+        % ifelse 
+        {                          % a d i d e 
+            get                    % a d i v 
+            3 index  3 1 roll      % a d a i v 
+            put 
+        } % else 
+        {                          % a d i d e 
+            dup type /arraytype eq % a d i d e ? 
+            { exch a.dictBind } 
+            { pop pop } ifelse 
+            pop 
+        } ifelse                   % a d 
+    } for 
+    pop pop 
+}.
+
+
+% inject new code into a procedure
+% proc index any /a.injectAt proc
+/a.injectAt {
+	2 index 	% proc index any proc
+	dup	wcheck { % ifelse
+		3 1 roll    % proc proc index any
+	} {
+		4 -1 roll pop % drop the original procedure
+		a.deepCopy dup
+		4 2 roll
+	} ifelse
+	put 
+	bind
+}.
+
+
+% Replace all references to key names from the current dictionary 
+% with (a reference to) their values.
+%
+% proc /a.localBind proc
+/a.localBind {
+	dup wcheck not {
+		a.deepCopy
+	} if
+	dup currentdict a.dictBind 
+}.
+
+
+% proc /a.localBind* proc
+/a.localBind* {
+	a.localBind bind
+}.
+
+
+/f.fromArrayConverter <<
+	/arraytype {}
+	/proctype {cvx}
+	/stringtype {s.fromArray}
+>> .
+
+
+% array /f.pickArrayConverter {converter}
+/f.pickArrayConverter { 
+	dup xcheck {pop /proctype} {type} ifelse
+ 	//f.fromArrayConverter exch get
+}.
+
+
+% indexToArray {proc} /f.arrayConverterWrapper {proc}
+/f.arrayConverterWrapper {
+	2 dict begin 
+		/proc ; 
+		index f.pickArrayConverter /converter ;
+		{
+			/proc exec
+			/converter exec
+		} a.localBind 
+	end
+	exec
+}.
+
+
+% [a1..an] x /cons [x a1..an]
+/cons {
+	% The following code is equivalent to: 
+	% 1 {[ &321 a._ pop ]} f.arrayConverterWrapper
+
+	% create a bigger array first
+	1 index length 1 add 									% arrayN x N+1
+	2 index type /stringtype eq {string} {array} ifelse 	% arrayN x arrayN+1
+	dup 1 4 index putinterval  								% arrayN x arrayN+1
+	dup 0 4 3 roll put 										% arrayN arrayN+1
+	exch xcheck {cvx} if
+}.
+
+
+% Assertions
+% [
+% 	{ [] 3 cons 2 cons 1 cons [1 2 3] deepEq }
+% 	{ () 67 cons 66 cons 65 cons (ABC) deepEq } 
+% 	{ {} /add ' cons 2 cons 1 cons {1 2 add} deepEq } 
+% ] d.assert!
+
+
+% [a1..an] x /append [a1..an x]
+/append {
+	% The following code is equivalent to: 
+	% 1 {[ &321 a._ length 1 add -1 roll ]} f.arrayConverterWrapper
+
+	% create a bigger array first
+	1 index length 1 add 									% arrayN x N+1
+	2 index type /stringtype eq {string} {array} ifelse 	% arrayN x arrayN+1
+	dup 0 4 index putinterval  								% arrayN x arrayN+1
+	dup dup length 1 sub 4 3 roll put						% arrayN arrayN+1
+	exch xcheck {cvx} if
+}.
+
+
+% Assertions
+% [
+% 	{ [] 1 append 2 append 3 append [1 2 3] deepEq }
+% 	{ () 65 append 66 append 67 append (ABC) deepEq } 
+% 	{ {} 1 append 2 append /add ' append {1 2 add} deepEq } 
+% ] d.assert!
+
+
+% Extract the first element of a list, which must be non-empty
+%
+% head :: [a] -> a
+% [a1..an] /head a1
+/head {
+	0 get
+}.
+
+
+% Extract the last element of a list, which must be finite and non-empty.
+%
+% last :: [a] -> a
+
+
+% Extract the elements after the head of a list, which must be non-empty.
+%
+% tail :: [a] -> [a]
+% [a1..an] /tail [a2..an]
+/tail {
+	dup length 1 sub 1 exch getinterval
+}.
+
+
+%Return all the elements of a list except the last one. The list must be non-empty.
+%
+% init :: [a] -> [a]
+
+
+% Decompose a list into its head and tail. If the list is empty, returns Nothing. 
+% If the list is non-empty, returns Just (x, xs), where x is the head of the list 
+% and xs its tail.
+%
+% uncons :: [a] -> Maybe (a, [a])
+% [a1..an] /uncons [a2..an] a1
+/uncons {
+	dup tail exch head
+}.
+
+
+%end	% preludeBootstrap
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

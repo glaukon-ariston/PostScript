@@ -1,0 +1,201 @@
+%!PS-Adobe-3.0
+%%Title: musicBoxPaper.ps
+%%BoundingBox: 0 0 842 597
+%%DocumentPaperSizes: A4
+%%DocumentMedia: A4 842 597 0 () ()
+%%Orientation: Landscape
+%%Creator: github.com/glaukon-ariston
+%%Copyright: (C) 2019 Glaukon Ariston. All Rights Reserved
+%%Date: 22/02/2019
+%%LanguageLevel: 3
+%%EndComments
+
+% gswin32c -dNOPAUSE -dCompatibilityLevel#1.4 -dOSTACKPRINT -dESTACKPRINT -sFONTPATH#"C:/Windows/Fonts"
+
+/CopyrightStatement (Copyright 2019 Glaukon Ariston) def
+
+%%BeginProlog
+
+userdict begin
+
+/placemat <<>> def
+placemat begin (../include/placemat.ps) run end	% placemat
+(../lib/base/prelude.ps) run
+prelude begin
+
+%%EndProlog
+
+
+%%BeginSetup
+
+A4Landscape /PageSize ;
+
+% http://pages.cs.wisc.edu/~rjl/landscape/
+<< /PageSize PageSize >> setpagedevice
+
+
+/margin [2.5 mm 0 2.5 mm 0]. 		% [top left bottom right]
+
+
+/labelSize 10 .
+/clefSize 48 .
+
+/font0 {/Calibri findfont labelSize scalefont setfont} .
+/font1 {/Bravura findfont clefSize scalefont setfont} .
+
+% https://color.adobe.com/create/color-wheel
+%/cmykBackground [0 0 0 1] def
+
+/stripWidth 41 mm .
+/noteSpacing 2 mm .
+/edgeOffset 6.5 mm .
+/beatSpacing 8 mm .
+/noteCount 15 .
+/stripCount 15 .
+/beatCount PageSize !x margin !l sub margin !r sub beatSpacing div cvi .
+/quarterBeats beatCount 4 mul .
+/quarterSpacing beatSpacing 4 div .
+/linewidth 0.3 pt .
+/notes [(CDEFGABCDEFGABC) {1 string dup 0 4 3 roll put} forall] .
+/labelMargin [1 pt neg 1 pt neg 1 pt 1 pt] . 	% [llx lly urx ury]
+
+%%EndSetup
+
+
+%%BeginScript
+
+/hLine {
+	gsave
+	newpath
+	margin !l 0 moveto PageSize !x margin !r sub 0 lineto
+	stroke
+	grestore
+}.
+
+
+/vLine {
+	gsave
+	newpath
+	0 0 moveto 0 noteCount 1 sub noteSpacing mul lineto
+	stroke
+	grestore
+}.
+
+
+/cutLine {
+	% dashed cut line
+	[2 mm] 0 setdash
+	linewidth setlinewidth
+	0.5 setgray % gray color
+	hLine
+}.
+
+
+% linewidth /solidHLine -
+/solidHLine {
+	/lineW ;
+	% solid line
+	[] 0 setdash
+	lineW setlinewidth
+	0 setgray % black color
+	hLine
+}.
+
+
+% [ ] 0 setdash % Solid, unbroken lines
+% [3] 0 setdash % 3 units on, 3 units off, …
+% [2] 1 setdash % 1 on, 2 off, 2 on, 2 off, …
+% [2 1] 0 setdash % 2 on, 1 off, 2 on, 1 off, …
+% [3 5] 6 setdash % 2 off, 3 on, 5 off, 3 on, 5 off, …
+% [2 3] 11 setdash % 1 on, 3 off, 2 on, 3 off, 2 on, …
+% 1 setgray % white color
+
+% The Unicode code point for a G (treble) clef in Bravura Text is U+E050
+% http://www.smufl.org/files/smufl-0.9.pdf
+% p48 Clefs (U+E050–U+E07F)
+% U+E050 (and U+1D11E) gClef G clef 
+
+%% Main
+[CopyrightStatement] {print (\n) print} forall
+(Main\n) print
+<<>>begin
+	0 margin !b translate
+
+	cutLine
+	stripCount {
+		0 edgeOffset translate
+
+		% draw G clef
+		gsave 
+			font1 
+			1.5 inch clefSize 5 div 3 mul moveto 
+			0.7 setgray 
+			/uniE050 glyphshow 
+		grestore
+
+		% beat lines
+		gsave 
+		0 setgray % black color
+		1 1 quarterBeats { % for
+			quarterSpacing 0 translate 
+			4 mod 
+			[
+				{ [] 0 setdash  linewidth 3 mul setlinewidth } 		% remainder 0
+				{ [0.4 mm] 0 setdash  linewidth setlinewidth } 		% remainder 1
+				{ [] 0 setdash  linewidth setlinewidth } 			% remainder 2
+				{ [0.4 mm] 0 setdash  linewidth setlinewidth } 		% remainder 3
+			] exch get exec
+			vLine
+		} for 
+		grestore
+		
+		% beat labels
+		gsave
+			font0
+			0 setgray % black color
+			beatSpacing  noteCount 1 add noteSpacing mul  moveto
+			90 rotate
+			[1 1 beatCount {d.toStringAny} for] { 
+				.pos !_ moveto 
+				.pos beatSpacing neg !y+=
+			} labelMargin showLabels
+		grestore
+
+		% note lines
+		gsave 
+			0 noteSpacing neg translate
+			1 { 0 noteSpacing translate linewidth solidHLine } repeat
+			5 { 
+				0 noteSpacing translate 
+				linewidth solidHLine 
+				0 noteSpacing translate 
+				linewidth 3 mul solidHLine 
+			} repeat
+			noteCount 1 sub 5 2 mul sub { 0 noteSpacing translate linewidth solidHLine } repeat
+		grestore
+
+		% erase label place holders first and then show note names
+		gsave
+			font0
+			0 setgray % black color
+			1 inch 0 moveto
+			90 rotate
+			notes { 
+				.pos !_ moveto 
+				.pos noteSpacing !x+=
+			} labelMargin showLabels
+		grestore
+
+		0 noteCount 1 sub noteSpacing mul translate
+		0 edgeOffset translate
+		cutLine
+	} repeat
+
+
+end
+showpage
+
+%%EndScript
+
+%%Trailer
+%%EOF

@@ -1,0 +1,178 @@
+%!PS-Adobe-3.0
+%%Title: preludeString.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeString <<>> def
+%preludeString begin
+
+
+% a b /s.append ab
+/s.append { 
+    [ 3 1 roll ] s.concat
+}.
+
+
+% a1..an string[N] /s.store string
+/s.store { 
+    dup length mark exch 2 add 2 roll ]
+    exch
+    s.fromArray**
+}.
+
+
+% string /s.dimension height width
+/s.dimension {
+    gsave                                  % save graphic context
+        0 0 moveto                         % move to some point 
+        false charpath flattenpath pathbbox     % gets text path bounding box (LLx LLy URx URy)
+        3 1 roll sub                    % LLx URx URy-LLy
+        3 -1 roll exch sub              % URy-LLy URx-LLx
+        exch
+    grestore                               % restore graphic context
+} bind def
+
+
+% string marker /s.stripAfter string
+/s.stripAfter {<<>>begin 
+    search {
+        % post match pre
+        3 1 roll
+        pop
+        pop
+    } if
+end} def
+
+
+% string padding n /s.padLeft string
+/s.padLeft {
+    2 index length 
+    sub dup 0 gt
+    {   1 sub
+        % string padding n'
+        mark 4 1 roll 
+        { dup } repeat 
+        counttomark -1 roll
+        ] s.concat
+    } { pop
+        pop
+    } ifelse
+} bind def
+
+
+% string whitespace /s.trimLeft string
+/s.trimLeft {<<>>begin
+    [/str /whitespace]#=
+    false
+    0 1 str length 1 sub {
+        dup str exch 1 getinterval
+        whitespace exch search { % index post match pre
+            pop pop pop pop
+        } { % index string
+            pop 
+            /i exch def
+            pop true
+            exit
+        } ifelse
+    } for
+    {
+        str i dup str length exch sub getinterval   % substr(i, length-i)
+    } {()} ifelse
+end} bind def
+
+
+% _ /s.whitespace string
+/s.whitespace ( \n\r\t) def
+
+
+% string /s.trimLeftWS string
+/s.trimLeftWS {
+    //s.whitespace s.trimLeft
+} bind def
+
+
+% string whitespace /s.trimRight string
+/s.trimRight {<<>>begin
+    [/str /whitespace]#=
+    false
+    0 1 str length 1 sub {
+        dup str exch 1 getinterval
+        whitespace exch search { % index post match pre
+            pop pop pop pop
+        } { % index string
+            pop 
+            /i exch def
+            pop true
+            exit
+        } ifelse
+    } for
+    {
+        str 0 i 1 add getinterval   % substr(0, i+1)
+    } {()} ifelse
+end} bind def
+
+
+% string delimiters /split [string]
+/s.split {<<>>begin
+    [/sentence /delimiters]#=
+    /left 0 def
+    /right 0 def
+    /result [] def
+    /limit sentence length 1 sub def
+    {
+        % skip delimiters (find the beginning of a word)
+        false
+        right 1 limit {
+            dup sentence exch 1 getinterval
+            delimiters exch search { % index post match pre
+                pop pop pop pop
+            } { % index string
+                pop 
+                /left exch def
+                pop true 
+                exit
+            } ifelse
+        } for
+        not {exit} if   % exit the loop if we reached the end of the sentence
+        
+        % skip non-delimiters (find the end of the word)
+        false
+        left 1 add 1 limit {
+            dup sentence exch 1 getinterval
+            delimiters exch search { % index post match pre
+                pop pop pop
+                /right exch def
+                pop true
+                exit
+            } { % index string
+                pop pop
+            } ifelse
+        } for
+        not {/right limit 1 add def} if % terminate the word if we reached the end of the sentence
+
+        % append the new word to the list
+        [ result aload pop
+            sentence left right left sub getinterval
+        ] /result exch def
+    } loop
+    result
+end} bind def
+
+
+
+%end    % preludeString
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

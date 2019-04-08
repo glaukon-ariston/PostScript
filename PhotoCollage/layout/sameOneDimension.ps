@@ -1,0 +1,151 @@
+%!PS-Adobe-3.0
+%%Title: layout/sameOneDimension.ps
+%%Creator: github.com/user/glaukon-ariston
+%%Copyright: (C) 2019 Galukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+/calcBoxSizeWithFixedHeight { <<>> begin % wx wy -> width height
+	div fixedImageSize mul fixedImageSize
+end} def
+
+
+/calcBoxSizeWithFixedWidth { <<>> begin % wx wy -> width height
+	exch div fixedImageSize mul titleHeight add fixedImageSize exch
+end} def
+
+
+/calcImageSizeWithFixedHeight { <<>> begin % wx wy -> width height
+	div fixedImageSize mul fixedImageSize
+end} def
+
+
+/calcImageSizeWithFixedWidth { <<>> begin % wx wy -> width height
+	exch div fixedImageSize mul fixedImageSize exch
+end} def
+
+
+/renderImageStripH {<<>>begin % imageStripIndex imageStrip imageStripSizeCurrent -> -
+	[/imageStripIndex /imageStrip /imageStripSizeCurrent ]#==
+
+	/stripMargin canvasSize axis imageStripSizeCurrent sub 2 div def
+	/x margin-left stripMargin add def
+	/y totalStripCount imageStripIndex 1 add sub 
+		[fixedStripSize variableInterspace] sum
+		mul
+		margin-bottom add
+	def
+	
+	debug {
+		gsave
+		debug-gray setgray
+		x y 
+			canvasSize axis stripMargin 2 mul sub 
+			fixedStripSize 
+			rectstroke
+		grestore
+	} if
+
+	imageStrip {
+		x y renderImage [/imageWidth /imageHeight]#=
+		/x [x imageWidth fixedInterspace] sum def
+	} forall
+end} def
+
+
+/renderImageStripV {<<>>begin % imageStripIndex imageStrip imageStripSizeCurrent -> -
+	[/imageStripIndex /imageStrip /imageStripSizeCurrent ]#==
+
+	/stripMargin canvasSize axis imageStripSizeCurrent sub 2 div def
+	/x totalStripCount imageStripIndex 1 add sub 
+		[fixedStripSize variableInterspace] sum
+		mul
+		margin-left add
+	def
+	/y margin-bottom stripMargin add def
+	
+	debug {
+		gsave
+		debug-gray setgray
+		x y 
+			fixedStripSize
+			canvasSize axis stripMargin 2 mul sub 
+			rectstroke
+		grestore
+	} if
+
+	imageStrip reverse {
+		x y renderImage [/imageWidth /imageHeight]#=
+		/y [y imageHeight fixedInterspace] sum def
+	} forall
+end} def
+
+
+%<<
+%	/calcBoxSize {calcBoxSizeWithFixedHeight} def
+%	/axis {#x} def
+%	/renderImageStrip {renderImageStripH} def
+%>>
+/processMetaFile {begin % imageDir metaFile dict -> -
+	[/iamgeDir /metaFile]#=
+	/imageTotal 0 def
+	/imageStripIndex 0 def
+	/imageStrip [] def
+	/imageStripSizeCurrent 0 def
+	{
+		metaFile 4096 string readline [/notEof]#=
+		dup length 0 eq {exit} if
+		cvx exec [/imageMeta]#= % [filename timestamp title]
+		[imageDir imageMeta 0 get] sconcat [/filePath]#=
+		filePath jpegSize calcBoxSize [/boxWidth /boxHeight]#=
+		/imageMeta [filePath] imageMeta append def
+		
+		[imageStripSizeCurrent fixedInterspace [boxWidth boxHeight] axis] sum 
+		dup
+		canvasSize axis
+		le {
+			/imageStripSizeCurrent exch def
+			/imageStrip imageStrip [imageMeta] append def
+			/imageTotal imageTotal 1 add def
+		} {
+			pop
+			
+			imageStripIndex imageStrip imageStripSizeCurrent renderImageStrip
+			
+			/imageStripIndex imageStripIndex 1 add def
+			/imageStripSizeCurrent [boxWidth boxHeight] axis def
+			/imageStrip [imageMeta] def
+		} ifelse
+		imageStripIndex totalStripCount ge { exit } if
+		notEof not { 
+			imageStripIndex imageStrip imageStripSizeCurrent renderImageStrip
+			exit 
+		} if
+	} loop
+	imageTotal
+end} def
+
+
+% imageDir metaFile orientation /layout imageTotal
+/layout {<<>> begin
+	horizontal eq
+	{
+		<<
+			/calcBoxSize {calcBoxSizeWithFixedHeight}
+			/calcImageSize {calcImageSizeWithFixedHeight}
+			/axis {#x}
+			/renderImageStrip {renderImageStripH}
+		>>
+	} {
+		<<
+			/calcBoxSize {calcBoxSizeWithFixedWidth}
+			/calcImageSize {calcImageSizeWithFixedWidth}
+			/axis {#y}
+			/renderImageStrip {renderImageStripV}
+		>>
+	} ifelse
+	processMetaFile
+end} def
+

@@ -1,0 +1,293 @@
+%!PS-Adobe-3.0
+%%Title: preludeDebug.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeDebug <<>> def
+%preludeDebug begin
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Reflection
+
+/s.BUFFER_SIZE 128 def
+
+% any /d.toStringAny string
+/d.toStringAny {
+    //s.BUFFER_SIZE string cvs
+} bind def
+
+
+% proc /d.toStringProc string
+/d.toStringProc { % proc -> string
+    [ ({) 3 -1 roll 
+        {d.toString ( )} forall 
+        pop
+        (}) ] s.concat
+} def
+
+
+% array /d.toStringArray string
+/d.toStringArray {
+    [ ([) 3 -1 roll 
+        {d.toString ( )} forall
+        pop
+        (]) ] s.concat
+} def
+
+
+% dict /d.toStringDict string
+/d.toStringDict {
+    [ (<<\n) 3 -1 roll
+        { [ (/) 4 2 roll
+            d.toString
+            exch 
+            d.toStringAny 
+            exch 
+            ( ) 
+            exch
+            (\n) ] s.concat
+        } forall
+        (>>\n) ] s.concat
+} def
+
+
+% any /d.toStringAny* any string
+/d.toStringArray* { dup xcheck { d.toStringProc } { d.toStringArray } ifelse }.
+
+
+/d.showConstructors <<
+    /stringtype 		{}
+    /dicttype 			/d.toStringDict '
+    /arraytype 			/d.toStringArray* '
+    /packedarraytype 	/d.toStringArray* '
+    /nametype 			/d.toStringAny '
+    /booleantype 		/d.toStringAny '
+    /nulltype 			/d.toStringAny '
+    /operatortype 		/d.toStringAny '
+    /filetype 			/d.toStringAny '
+    /fonttype 			/d.toStringAny '
+    /realtype 			/d.toStringAny '
+    /gstatetype 		/d.toStringAny '
+    /savetype 			/d.toStringAny '
+    /integertype 		/d.toStringAny '
+    /marktype 			/d.toStringAny '
+>> .
+
+
+% any /d.toString string
+/d.toString {
+    dup type //d.showConstructors exch get exec
+}.
+
+
+% n /d.showN _
+/d.showN {<<>>begin % n -> -
+	/n exch def
+	n copy [ n 1 add 1 roll ] 	% create an array from the top n elements
+	d.toString print 			% print out the generated array
+end} bind def
+
+
+% [key1..keyN] /d.showKeys -
+/d.showKeys {
+	{ 
+		dup d.toStringAny exch			% stringKey key  
+		load d.toString 				% stringKey stringVal
+		(: ) exch (\n)					% stringKey (: ) stringVal (\n)
+		[ 5 1 roll ] s.concat print
+	} forall
+} bind def
+
+
+% dict [key1..keyN] /d.showDictKeys -
+/d.showDictKeys {
+	{ 
+		dup d.toStringAny exch			% dict stringKey key  
+		2 index exch get d.toString 	% dict stringKey stringVal
+		(: ) exch (\n)					% dict stringKey (: ) stringVal (\n)
+		[ 5 1 roll ] s.concat print
+	} forall
+	pop
+} bind def
+
+
+% units {pt2units} label value /d.toStringLabel* units {pt2units}
+/d.toStringLabel* {
+	dup type /arraytype eq { % ifelse
+		{ 2 index exec } f.map
+	} {
+		2 index exec 
+	} ifelse
+	d.toString 3 index % units /pt2units label value units
+	[ 4 1 roll 
+	(: ) 3 1 roll 
+	() 2 1 roll 
+	] 
+	s.concat
+}.
+
+
+% label value units /d.toStringLabel -
+/d.toStringLabel {
+	% (include/db5.ps) run traceon currentfile cvx debug
+	dup d.toStringAny (pt2) exch s.append cvn cvx 	% label value units /pt2units 
+	4 -2 roll 										% units /pt2units label value
+	d.toStringLabel*
+	3 1 roll 										% result units /pt2units
+	pop pop
+}.
+
+
+% [keys] units /d.showLabels -
+/d.showLabels {
+	% (include/db5.ps) run traceon currentfile cvx debug
+	dup d.toStringAny (pt2) exch s.append cvn cvx 	% [keys] units /pt2units 
+	3 -1 roll 										% units /pt2units [keys]
+	{ 
+		dup d.toStringAny exch load 	% units /pt2units keyString keyValue
+		d.toStringLabel* print 
+		(\n) print 
+	} forall
+	pop pop
+}.
+
+
+% matrix /d.showMatrix _
+/d.showMatrix {<<>>begin
+	aload d.toString print
+	[/a /b /c /d /tx /ty] #=
+	[( { angle=) b a atan2 d.toString ( }\n)] s.concat print
+end} bind def
+
+
+% dict /d.showDict _
+/d.showDict {
+	(<<\n) print
+	{ exch 
+		(/) print
+		d.toStringAny print
+		( ) print
+		dup type d.toStringAny print
+		( ) print
+		d.toString print
+		(\n) print
+	} forall
+	(>>\n) print
+} bind def
+
+
+% The lowest dictionary on the stack has index 0.
+% i /d.showStack _
+/d.showStack {<<>>begin
+	/i exch def
+	countdictstack 
+		dup array dictstack
+		exch 2 sub i sub get 
+	d.showDict
+end} bind def
+
+
+% bool /assert _
+/d.assert {
+	exec not {
+		(#ASSERT!) print
+		0 d.showStack
+		stop
+	} if
+} def
+
+
+% PLRM pages 116-117
+%
+% After an error occurs and one of the default error-handling procedures is executed,
+% $error contains the entries shown in Table 3.16.
+% 
+% TABLE 3.16 Entries in the $error dictionary
+% 
+% Key: newerror
+% Type: boolean 
+% Value: A flag that is set to true to indicate that an error has occurred. 
+% 	handleerror sets it to false.
+% 
+% Key: errorname 
+% Type: name
+% Value: The name of the error that occurred.
+% 
+% Key: command
+% Type: any
+% Value: The operator or other object being executed by the interpreter at the time 
+% 	the error occurred.
+% 
+% Key: errorinfo
+% Type: array or null 
+% Value: (LanguageLevel 2) If the error arose from an operator that takes a parameter
+% 	dictionary as an operand (such as setpagedevice or setdevparams), this
+% 	array contains the key and value of the incorrect parameter. (If a required
+% 	entry was missing, this array contains the expected key with a null value.)
+% 	handleerror sets errorinfo to null.
+% 
+% Key: ostack
+% Type: array
+% Value: A snapshot of the entire operand stack immediately before the error, stored 
+% 	as if by the astore operator.
+% 
+% Key: estack
+% Type: array
+% Value: A snapshot of the execution stack, stored as if by the execstack operator.
+% 
+% Key: dstack
+% Type: array
+% Value: A snapshot of the dictionary stack, stored as if by the dictstack operator.
+% 
+% Key: recordstacks
+% Type: boolean
+% Value: (LanguageLevel 2) A flag that controls whether the standard error handlers
+% 	record the ostack, estack, and dstack snapshots. Default value: true.
+% 
+% Key: binary
+% Type: boolean
+% Value: (LanguageLevel 2) A flag that controls the format of error reports produced
+% 	by the standard handleerror procedure. false produces a text message; true
+% 	produces a binary object sequence (see Section 3.14.6, “Structured Output”).
+% 	Default value: false.
+% 
+% array /d.assert! -
+/d.assert! {
+	{ 
+		dup stopped { 
+			(error> Failed with /) print 
+			$error /errorname get d.toString print
+			( while executing command `) print
+			$error /command get d.toString print
+			(`.\n) print
+			(error> Current stack trace:\n) print
+			pstack
+		} {
+			{pop} % all OK
+			{
+				(#Assertion failed.\n) print
+				(Current stack trace:\n) print
+				pstack
+			} 
+			ifelse
+		} ifelse 
+	} forall
+}.
+
+
+%end	% preludeDebug
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

@@ -1,0 +1,55 @@
+%!PS-Adobe-3.0
+%%Title: preludeError.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeError <<>> def
+%preludeError begin
+
+% push cons {errordict /errname {old-handler}} to this list
+% [ {errordict /errname {handler}} ]
+/errorstack [] .
+
+
+% key {new} /pushErrorHandler -
+/pushErrorHandler { 
+    errordict 3 1 roll 
+    % errordict key {new}
+    3 copy pop 2 copy get
+    % errordict key {new} errordict key {old}
+    3 array astore cvx 			% {errordict key {old}}
+    /errorstack {cons} modify 
+    /errorstack exch store 
+    % errordict key {new}
+    put 
+}.
+
+
+% - /popErrorHandler {old}
+/popErrorHandler { 
+    errorstack dup null ne { 
+        aload pop
+        /errorstack exch store 
+        exec put 
+    } {
+    	pop
+   	} ifelse
+}.
+
+
+%end	% preludeError
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

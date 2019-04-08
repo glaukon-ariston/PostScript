@@ -1,0 +1,108 @@
+%!PS-Adobe-3.0
+%%Title: preludeLayout.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeLayout <<>> def
+%preludeLayout begin
+
+
+% [llx lly urx ury] [margin] /expandRect llx lly urx ury
+/expandRect {
+	[ 3 1 roll ] {add} a.forall 
+}.
+
+
+% string [margin] /eraseBBox -
+/fillBBox {
+	[/s /margin] let
+		gsave
+		s false charpath
+		% flattenpath pathbbox
+		placemat begin PathBBox end
+		[ 5 1 roll ] margin expandRect 
+		[/llx /lly /urx /ury] #=
+		urx llx sub ury lly sub [/width /height] #=
+
+		% paint (erase) the bounding box
+		llx lly width height rectfill
+		grestore
+	end
+}.
+
+
+% [string] {advancePos} {doSmth} /forLabel -
+/forLabel {
+	[/labels /advance /doSmth] let
+		gsave
+		labels {
+			/s ;
+			newpath
+			advance
+			s textSize  			% width height
+			2 div neg  				% center the label vertically
+			exch 
+			2 div neg 
+			exch
+			rmoveto 				% center the label horizontally
+			s doSmth
+		} forall
+		grestore
+	end
+}.
+
+
+% [string] {nextPos} [margin] showwLabels -
+/showLabels {
+	[/labels /nextPos /labelMargin] let
+		{
+			[currentpoint] [/.pos] let
+				/nextPos ' a.deepCopy a.localBind
+			end
+		} /advance ;
+
+		% erase the background
+		labels advance {
+			1 setgray % white color
+			labelMargin fillBBox
+		} forLabel
+		% draw the label
+		labels advance {
+			show
+		} forLabel
+	end
+}.
+
+
+% USAGE EXAMPLE
+%
+%		/labelMargin [1 pt neg 1 pt neg 1 pt 1 pt] . 	% [llx lly urx ury]
+%		% beat labels
+%		gsave
+%			font0
+%			0 setgray % black color
+%			beatSpacing  noteCount 1 add noteSpacing mul  moveto
+%			90 rotate
+%			[1 1 beatCount {d.toStringAny} for] { 
+%				.pos !_ moveto 
+%				.pos beatSpacing neg !y+=
+%			} labelMargin showLabels
+%		grestore
+
+
+%end	% preludeLayout
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

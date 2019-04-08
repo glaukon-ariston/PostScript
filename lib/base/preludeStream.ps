@@ -1,0 +1,99 @@
+%!PS-Adobe-3.0
+%%Title: preludeStream.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeStream <<>> def
+%preludeStream begin
+
+
+% initial step limit /i.range (- /next num true | false)
+/i.range { 
+	2 index 	% initial
+	[ exch ] 
+	[/.initial /.step /.limit /.counter] let
+		.step 0 lt {{lt}} {{gt}} ifelse /.check ;
+		% - /.next num true | false
+		{
+			.counter 0 get 
+			dup .limit .check exec  {
+				pop
+				false
+			} {
+				dup .step add
+				.counter 0 &231 put
+				true
+			} ifelse
+		} a.localBind
+	end
+}.
+
+
+% iterator proc /i.iterate - 
+/i.iterate { 
+	[/.iterator /.proc] let
+		% - /.iterate -
+		{
+			{
+				.iterator exec
+				.proc { exit } ifelse
+			} loop
+		} a.localBind
+	end
+	exec
+}.
+
+
+% Assertions
+[ 
+	{[ 0 1 5 i.range {} i.iterate ] [0 1 2 3 4 5] deepEq } 
+	{[ 0 -1 -3 i.range {} i.iterate ] [0 -1 -2 -3] deepEq } 
+] d.assert!
+
+
+% iterator /i.consume [a] 
+/i.consume {
+	[exch {} i.iterate] 
+}.
+
+
+% [a] /i.iterator (- /.next a true | false) 
+/i.iterator {
+	dup length
+	[0] 
+	[/.xs /.limit /.counter] let
+		% - /.next a true | false
+		{
+			.counter 0 get 
+			dup .limit ge { pop false } { % ifelse
+				dup 1 add .counter 0 &231 put
+				.xs exch get
+				true
+			} ifelse
+		} a.localBind
+	end
+}.
+
+
+% Assertions
+[ 
+	{ [0 1 2 3 4 5] i.iterator i.consume [0 1 2 3 4 5] deepEq } 
+] d.assert!
+
+
+%end	% preludeStream
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

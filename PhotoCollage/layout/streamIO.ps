@@ -1,0 +1,80 @@
+%!PS-Adobe-3.0
+%%Title: streamIO.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/streamIO <<>> def
+%streamIO begin
+
+
+% file string readline substring notEof  		-- Read line from file into string
+% pathMeta /mkReadline  (/nextLine line notEof)
+/mkReadline { <<>> begin
+	(r) file /fileMeta ;
+
+	% notEof line :nextLine
+	{
+		fileMeta dup 4096 string readline 
+		% fileMeta substring bool
+		&231 1 index
+		{ % ifelse
+			pop
+		} {
+			closefile
+		} ifelse
+	} a.localBind
+end}.
+
+
+% imageDir pathMeta /mkMetaParser (/nextImage [filepath filename timestamp title] true | false)
+/mkMetaParser { <<>> begin
+	mkReadline /nextLine ;
+	/imageDir ;
+
+	% false | true <<filepath filename timestamp title width height>> :nextImage
+	{ <<>> begin
+		{ % loop
+			nextLine exec /notEof ;
+			% ignore empty lines
+			dup length 0 gt { % ifelse
+				% [filename timestamp title]
+				cvx exec /imageMeta ;
+				/filepath [imageDir imageMeta 0 get] s.concat .
+				<<
+					/filepath filepath
+					/filename imageMeta 0 get
+					/timestamp imageMeta 1 get
+					/title imageMeta 2 get
+					filepath jpegSize
+					/width 3 1 roll 
+					/height exch 
+				>>
+				true
+				% true [filepath filename timestamp title]
+				exit
+			} {
+				% skip empty lines
+				pop
+				notEof not {false exit} if
+			} ifelse
+		} loop
+	end} a.localBind
+end}.
+
+
+%end	% streamIO
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

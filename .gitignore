@@ -1,0 +1,12 @@
+include
+examples
+Resource
+poster
+Unicode
+*.7z
+*.pdf
+*.otf
+smufl-0.9.pdf
+TrueTypeToType42.ps
+asy-set-path.bat
+photoCollage_*.ps

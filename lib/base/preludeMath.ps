@@ -1,0 +1,98 @@
+%!PS-Adobe-3.0
+%%Title: preludeMath.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeMath <<>> def
+%preludeMath begin
+
+
+% x low high /limit x'
+/limit {
+	dup 3 index lt { % ifelse
+		% return high watermark
+		3 1 roll pop pop
+	} {
+		pop dup 2 index gt { % ifelse
+			% return low watermark
+			exch pop
+		} {
+			pop
+		} ifelse
+	} ifelse
+}.
+
+
+% n = floor(x/m)*m
+% x m /multiple n
+/multiple {
+	dup  					% x m m
+	3 1 roll 				% m x m
+	div floor cvi 			% m floor(x/m)
+	mul
+}.
+
+
+% n = floor((x+m-m/1e5)/m)*m
+% x m /multipleUp n
+/multipleUp {
+	dup dup dup 			% x m m m m
+	1e5 div sub 			% x m m (m-m/1e5)
+	4 -1 roll add exch		% m (x+m-m/1e5) m 
+	div floor cvi 			% m floor((x+m-m/1e5)/m)
+	mul
+}.
+
+
+% integer division rounded up
+% x y /divUp Tx/yT 
+/divUp {
+	% ((x-1) `div` y) + 1
+	% x 1 sub y idiv 1 add
+	div ceiling cvi
+} def
+
+
+% hamdle the case when num == 0 and den == 0
+% num den /atan2 degree
+/atan2 {
+	2 copy
+	0 eq exch 0 eq and { % ifelse
+		pop pop 0
+	} {
+		atan
+	} ifelse
+} bind def
+
+
+% matrix /rotationAngle degree
+/rotationAngle {
+	aload pop
+	pop pop pop pop exch atan2
+} bind def
+
+
+% matrix /translationDistance tx ty
+/translationDistance {
+	aload pop
+	6 2 roll
+	pop pop pop pop
+} bind def
+
+
+%end	% preludeMath
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

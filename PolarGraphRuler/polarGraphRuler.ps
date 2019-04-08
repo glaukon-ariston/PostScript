@@ -1,0 +1,341 @@
+%!PS-Adobe-3.0
+%%Title: polarGraphRuler.ps
+%%BoundingBox: 0 0 597 842
+%%DocumentPaperSizes: a4
+%%DocumentMedia: a4 595 842 0 () ()
+%%Orientation: Portrait
+%%Creator: Glaukon Ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 10/05/2016
+%%LanguageLevel: 3
+%%EndComments
+
+% http://ghostscript.com/doc/9.20/Use.htm#Input_control
+% http://ghostscript.com/doc/9.20/Use.htm#Parameters
+%
+% gswin32c @ps2pdf-polar.opt -sOutputFile#polar.pdf -fpolarGraphRuler.ps
+% gswin32c @ps2pdf-polar.opt -sOutputFile#polar.pdf -c ".setpdfwrite <</NeverEmbed [ ] /AlwaysEmbed [/Courier]>> setdistillerparams /tingId 1500 def" 
+
+
+/CopyrightStatement (Copyright 2018 Galukon Ariston) def
+
+
+%%BeginProlog
+
+(include/misc.ps) run
+
+/placemat <<>> def
+placemat begin
+(include/placemat.ps) run
+end	% placemat
+
+%%EndProlog
+
+
+
+%%BeginSetup
+
+misc begin
+
+/DEBUG false def
+/outlineRect { % x y w h lineWidth
+	DEBUG {
+		% draw an outline
+		gsave 
+			0.8 setgray	% debugGray
+			setlinewidth
+			rectstroke
+		grestore
+	} if
+} def
+
+
+/PageSize [
+	210 mm %width
+	297 mm %height
+] def
+
+/A4Margins [
+	25.4 mm %left
+	25.4 mm %top
+	25.4 mm %right
+	25.4 mm %bottom
+] def
+
+/FontSize 5 def
+/LineHeight 1.5 FontSize mul def
+/BaseFont /Calibri findfont def
+% basefont FontSize scalefont setfont
+%condensed:
+BaseFont [FontSize 0.6 mul 0 0 FontSize 0 0] makefont setfont
+
+%%EndSetup
+
+
+
+%%BeginScript
+
+/defineConstants { % maxRadius shortTick -> _
+	/maxRadius 100 def 	% in mm
+	/labelOffset 2.5 mm def
+	/labelMargin 0.5 mm def
+	/shortTick 5 mm def
+	shortTick 1.5 mul [/midTick]#=
+	midTick 1.5 mul [/longTick]#=
+	1 pt [/lineWidth2] #=
+	0.5 pt [/lineWidth1] #=
+	0.2 pt [/lineWidth0] #=
+	/units {mm} bind def
+	% radius in milimeters
+	[[ 
+		4.5
+		25 
+		160 3.2 2 mul sub 
+		160 
+		] {2 div} forall] /specialCircles xdef
+	% radius in milimeters
+ 	[1 1 maxRadius {
+ 		dup 5 mod 0 eq {
+ 				pop
+ 			} if
+ 		} for] /mm_mod5_!0 xdef
+ 	[1 1 maxRadius {
+ 		dup 5 mod 0 ne {
+ 				pop
+ 			} if
+ 		} for] /mm_mod5_0 xdef
+ 	[1 1 maxRadius {
+ 		dup 10 mod 0 ne {
+ 				pop
+ 			} if
+ 		} for] /mm_mod10_0 xdef
+ 	[1 1 maxRadius {
+ 		dup 10 mod 5 ne {
+ 				pop
+ 			} if
+ 		} for] /mm_mod10_5 xdef
+} def
+
+
+/drawCircles { <<>>begin % ticks lineWidth -> _
+	[/ticks /lineWidth] #=
+	gsave
+	ticks {
+		[/r] #=
+		newpath
+		0 0 r units 0 360 arc
+		lineWidth setlinewidth
+		stroke
+	} forall
+	grestore
+end } def
+
+
+/drawAngledAxis { <<>>begin % axisAngle maxLength proc -> _
+	[/axisAngle /maxLength /proc] #=
+	0 axisAngle 360 {
+		newpath
+		0 0 moveto maxLength 0 lineto 
+		stroke
+		proc
+		axisAngle rotate
+	} for
+end } def
+
+
+/drawLineTicks { <<>>begin % rs tickLen -> _
+	[/rs /tickLen] #=
+	gsave
+	newpath
+	rs {
+		[/r] #=
+		r units 0 moveto 
+		0 tickLen 2 div rmoveto
+		0 tickLen neg rlineto 
+	} forall
+	stroke
+	grestore
+end } def
+
+
+/drawArcTicks { <<>>begin % _ <- tickAngle rs
+	[/tickAngle /rs] $=
+	rs {
+		[/r] $=
+		gsave
+		newpath
+		0 0 r units tickAngle 2 div dup neg exch arc
+		stroke
+		grestore
+	} forall
+end } def
+
+
+/labels { <<>>begin % ticks offset proc -> _
+	[/ticks /yoffset /proc] #=
+	ticks {
+		[/d] #=
+		newpath
+		d units 0 moveto 
+		0 yoffset neg rmoveto
+		d toStr dup
+			textSize pop % width
+			2 div neg 0 rmoveto
+		proc
+	} forall
+end } def
+
+
+/expandRect { <<>>begin % llx lly urx ury margin -> llx lly urx ury
+	[/llx /lly /urx /ury /margin] #=
+	[llx lly] {margin sub} forall
+	[urx ury] {margin add} forall
+end } def
+
+
+/eraseBBox { <<>>begin % string margin -> _
+	[/s /margin] #=
+	gsave
+	s false charpath
+	% flattenpath pathbbox
+	placemat begin PathBBox end
+	margin expandRect 
+	[/llx /lly /urx /ury] #=
+	urx llx sub ury lly sub [/width /height] #==
+
+	% paint white (erase) the bounding box
+	1 setgray % white color
+	llx lly width height rectfill
+	grestore
+end } def
+
+
+/drawLabels { <<>>begin % ticks offset -> _
+	[/ticks /yoffset] #=
+
+	% erase the background
+	ticks yoffset {
+		labelMargin eraseBBox
+	} labels
+
+	% draw the label
+	ticks yoffset {
+		show
+	} labels
+end } def
+
+
+/drawPolarGraphRuler {<<>>begin % _ -> _
+	PageSize sum [/maxAxisLength] #=
+
+%	% draw milimeter circles, skipping all divisible by 5
+%	gsave
+%	0 setgray
+%	[1 1 maxRadius {
+%		dup 5 mod 0 eq {
+%				pop
+%			} if
+%		} for] lineWidth0 
+%		drawCircles
+%	grestore
+%
+%	% draw milimeter circles, but only those divisible by 5
+%	gsave
+%	0 setgray
+%	[5 5 maxRadius {} for] lineWidth1
+%		drawCircles
+%	grestore
+%
+ 	gsave
+ 	0 setgray
+ 	specialCircles lineWidth2 
+ 		drawCircles
+ 	grestore
+
+	gsave
+	[] 0 setdash
+	0 setgray
+	lineWidth0 setlinewidth
+	60 maxAxisLength {
+			mm_mod5_!0 5 drawArcTicks
+			mm_mod10_5 10 drawArcTicks
+			mm_mod10_0 15 drawArcTicks
+			% specialCircles shortTick drawLineTicks
+			mm_mod5_0 labelOffset drawLabels
+		}
+		drawAngledAxis
+	grestore
+
+	%0 stackTrace
+end } def
+
+
+% /main 
+{
+	[CopyrightStatement] {print (\n) print} forall
+	PageSize 0 get 2 divUp [/x] #=
+	PageSize 1 get 2 divUp [/y] #=
+	x y translate
+
+	defineConstants
+	drawPolarGraphRuler
+	showpage
+} exec
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/pathBBox' { <<>>begin % _ -> llx lly urx ury
+	/epsilon 0.01 def
+	/angleL 0 def
+	/angleH 45 def
+
+	gsave
+	flattenpath pathbbox [/llx /lly /urx /ury] #==
+	grestore
+	urx llx sub ury lly sub mul [/area0] #=
+
+	/angle angleH angleL add 2 div def
+	{
+		gsave
+		angle rotate
+		flattenpath pathbbox [/llx /lly /urx /ury] #==
+		grestore
+		urx llx sub ury lly sub mul [/area] #=
+
+		% exit the loop when adequate precision is reached
+		area area0 sub abs 
+			epsilon le {exit} if
+
+		% bisect the angle 
+		area area0 lt {
+			/angle angle2 angle1 add 2 div store
+		} {
+
+		} ifelse
+		/area1 area2 store
+	} loop
+
+end } def
+
+
+/pathBBox'' { <<>>begin % _ -> llx lly urx ury
+	(/pathBBox\n) print
+	gsave
+	matrix currentmatrix traceMatrix
+	matrix identmatrix setmatrix
+	flattenpath pathbbox [/llx /lly /urx /ury] #=
+	urx llx sub ury lly sub [/width /height] #==
+	grestore
+end } def
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+end % misc
+%%EndScript
+
+%%Trailer
+%%EOF

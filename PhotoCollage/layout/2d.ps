@@ -1,0 +1,507 @@
+%!PS-Adobe-3.0
+%%Title: layout/2d.ps
+%%BoundingBox: 0 0 2579 1729
+%%DocumentPaperSizes: A0
+%%DocumentMedia: A0 2579 1729 0 () ()
+%%Orientation: Portrait
+%%Creator: github.com/user/glaukon-ariston
+%%Copyright: (C) 2019 Galukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+(layout/streamIO.ps) run
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 2D Laoyout 
+% box :: (width,height)
+% stripH :: [box]
+% stripV :: [box]
+% page :: [stripH] | [stripV]
+% profile :: [box]
+% profile = ...
+% A [box] representation of the lowest contour. The boxes get layed out 
+% horizonatlly from left to right (or top to bottom) starting from the 
+% top left corner.
+% Something akin to a 2D watermark - the line that represents how far
+% we got with laying out boxes.
+%
+
+% wx wy fixedImageSize /calcBoxSizeWithFixedHeight width height
+/calcBoxSizeWithFixedHeight {
+	3 1 roll div  			% fixedImageSize wx/wy
+	1 index mul 			% fixedImageSize width
+	exch
+}.
+
+
+% wx wy fixedImageSize /calcBoxSizeWithFixedWidth width height
+/calcBoxSizeWithFixedWidth {
+	3 1 roll exch div		% fixedImageSize wy/wx
+	1 index mul 			% fixedImageSize height
+	titleHeight add			% fixedImageSize height
+}.
+
+
+% wx wy fixedImageSize /calcImageSizeWithFixedHeight width height
+/calcImageSizeWithFixedHeight {
+	3 1 roll div  			% fixedImageSize wx/wy
+	1 index mul 			% fixedImageSize width
+	exch
+}.
+
+
+% wx wy fixedImageSize /calcImageSizeWithFixedWidth width height
+/calcImageSizeWithFixedWidth {
+	3 1 roll exch div		% fixedImageSize wy/wx
+	1 index mul 			% fixedImageSize height
+}.
+
+
+% Walk the profile and find the place where it can put the box of the given dimensions.
+% There are many strategies for this.
+% Will use the following simple strategy:
+% 
+% metaBox pivot profile /placeBox <</location [x y] /meta>>
+/placeBox { <<>> begin
+	/profile ;
+	/pivot ;
+	/meta ;
+	profile {
+		def
+	} forall
+end}.
+
+
+% imageDir pathMeta dictParams /renderPage countImage
+/renderPage { begin 
+	mkMetaParser /nextMeta ;
+	% profile: current contour of layed out boxes (flat line of zero height at the start)
+	/profile [[canvasSize #x 0]] def
+	% page: holds rows of boxes
+	/page [] def
+	% row: current row of boxes
+	/row [] def
+	% pivot: current pivot location 
+	/pivot 0 def
+	nextMeta { % <<filepath filename timestamp title width height>>
+		/meta ;
+		pivot profile placeBox
+		% 
+	} iterate
+end}.
+
+
+% imageDir pathMeta /renderPage countImage
+/renderPageSeparateLP { <<>> begin
+	mkMetaParser /nextMeta ;
+
+	% - /nextMeta <<filepath filename timestamp title width height>>
+	/nextMeta ' i.consume {begin width height gt end} f.partition
+	/ps ;	% portraits
+	/ls ; 	% landscapes
+
+	% Minimise row and column interspace by slightly changing the image size
+	1 fixedImageSize {computeParams begin rowInterspace columnInterspace mul end } downhill
+	computeParams 
+	begin
+		[/lsCount /psCount /lpRatio /imageSizeRatio 
+			/landscapeWidth /landscapeHeight 
+			/landscapeBoxHeight 
+			/maxInaRowL /maxInaColumnL 
+			/maxInaRowP /maxInaColumnP
+			/portraitCount
+			/portraitInaRow /verticalPortraitInterspace /portraitInterspace  
+			/landscapeInaRow /landscapeInaChunk /landscapeChunks /landscapeChunkRemainder
+			/horizontalInterspace /columnInterspace /verticalInterspace /rowInterspace
+			] d.showKeys
+
+		[/horizontalInterspace /columnInterspace /verticalInterspace /rowInterspace /verticalPortraitInterspace
+			/landscapeWidth /landscapeHeight 
+			/landscapeBoxHeight 
+		] (mm) d.showLabels
+
+		0 /imageTotal ;
+		ls i.iterator /nextLandscape ;
+		ps i.iterator /nextPortrait ;
+
+		% Landscape pictures are layed out first following by portrait ones
+
+		% Initial location of the first picture
+		PageSize !y margin !t sub /y ;
+
+		maxInaColumnL { % repeat
+			{placeLandscape} {skipPortrait} placeRow
+			/y landscapeBoxHeight rowInterspace add -=
+		} repeat
+
+		% Initial location of the first picture
+		PageSize !y margin !t sub /y ;
+		{skipLandscape} {placePortraitColumn} placeRow
+
+		imageTotal
+	end
+end}.
+
+
+% {placeLandscape} {placePortrait} /placeRow -
+/placeRow { <<>> begin
+	/.placePortrait ;
+	/.placeLandscape ;
+	
+	margin !l /x ;
+	portraitInaRow /portraitCount ;
+
+	% Layout the first landscape chunk in a row
+	% Adjust the x offset for the first in a row
+	/x columnInterspace -=
+	landscapeInaChunk { % repeat
+		.placeLandscape 
+	} repeat
+	.placePortrait
+	/portraitCount 1 -= 
+	% Interleave landscape and portrait in a row
+	landscapeChunks 1 sub { % repeat
+		landscapeInaChunk { .placeLandscape } repeat
+		portraitCount 0 gt {
+	 		.placePortrait
+	 		/portraitCount 1 -=
+		} if 
+	} repeat
+	portraitCount 0 gt landscapeChunkRemainder 0 gt and {
+ 		.placePortrait
+ 		/portraitCount 1 -=
+	} if 
+	landscapeChunkRemainder { % repeat
+		.placeLandscape 
+	} repeat
+end}.
+
+
+% Layout the next picture and advance the current x pointer to the next position
+% - /placeLandscape -
+/placeLandscape {<<>> begin
+	nextLandscape not {exit} if
+	/imageMeta ;
+	% <<filepath filename timestamp title width height>>
+	/x columnInterspace +=
+	x y landscapeHeight imageMeta renderPictureWithTitle
+	/boxHeight ;
+	/boxWidth ;
+	/x boxWidth +=
+	/imageTotal 1 +=
+end}.
+
+
+% - /skipLandscape -
+/skipLandscape {
+	/x columnInterspace +=
+	[(Landscape skip. ) (xy) [x y] (mm) d.toStringLabel (\n)] s.concat print
+	/x landscapeWidth +=
+}.
+
+
+% Layout the next picture and advance the current x pointer to the next position
+% - /placePortrait -
+/placePortraitColumn {<<>> begin
+	/x columnInterspace +=
+	y /y' ;
+	maxInaColumnP { % repeat
+		nextPortrait not {exit} if
+		/imageMeta ;
+		% <<filepath filename timestamp title width height>>
+		x y' landscapeWidth imageMeta renderPictureWithTitle
+		/boxHeight ;
+		/boxWidth ;
+		/y' boxHeight portraitInterspace add -=
+		/imageTotal 1 +=
+	} repeat
+	/x boxWidth +=
+end}.
+
+
+% Advance the current x pointer to the next position without laying out the picture
+% - /skipPortrait -
+/skipPortrait {
+	/x columnInterspace +=
+	[(Portrait skip. ) (xy) [x y] (mm) d.toStringLabel (\n)] s.concat print
+	/x landscapeHeight +=
+}.
+
+
+% guessedImageSize /computeParams <<dict>>
+/computeParams { <<>> begin
+	/guessedImageSize ;
+
+	ls length /lsCount ;
+	ps length /psCount ;
+	lsCount psCount div /lpRatio ;
+
+	ls !0 begin width height div end /imageSizeRatio ;
+	ls !0 begin width height guessedImageSize calcImageSizeWithFixedWidth end /landscapeHeight ; /landscapeWidth ; 
+	landscapeHeight titleHeight add /landscapeBoxHeight ;
+	landscapeWidth titleHeight add /portraitBoxHeight ;
+	
+	% assume horizontal placement from left to right
+	% estimate the maximum number of pictures we can fit on the provided canvas
+	
+	% All pictures with landscape orientation
+	canvasSize !x 
+		landscapeWidth minInterspace add 
+		div floor cvi /maxInaRowL ;
+	canvasSize !y 
+		landscapeBoxHeight minInterspace add 
+		div floor cvi /maxInaColumnL ;
+
+	% All pictures with portrait orientation
+	canvasSize !x 
+		landscapeHeight minInterspace add 
+		div floor cvi /maxInaRowP ;
+	canvasSize !y 
+		portraitBoxHeight minInterspace add 
+		div floor cvi /maxInaColumnP ;
+
+	maxInaRowL maxInaColumnL mul lpRatio div 	% target count of portrait pictures
+		maxInaColumnP 
+		maxInaRowL maxInaColumnL mul 4 div 
+			maxInaColumnP
+			ps length
+			limit								% at least maxInaColumnP portrait pictures, but no more than available
+		limit  									% at least maxInaColumnP portrait pictures, but no more than a quarter of landscape ones
+	maxInaColumnP multipleUp 
+	/portraitCount ;
+
+	portraitCount maxInaColumnP div cvi /portraitInaRow ;
+	
+	canvasSize !x 
+		landscapeHeight minInterspace add portraitInaRow mul
+		sub
+		landscapeWidth minInterspace add 
+		div floor cvi /landscapeInaRow ;
+
+	landscapeInaRow portraitInaRow 1 sub add 
+		portraitInaRow div cvi /landscapeInaChunk ;
+
+	canvasSize !x
+		landscapeInaRow landscapeWidth mul
+		portraitInaRow landscapeHeight mul
+		add sub /horizontalInterspace ; 
+	horizontalInterspace 
+		landscapeInaRow portraitInaRow add 1 sub div /columnInterspace ;
+
+	canvasSize !y
+		maxInaColumnL landscapeBoxHeight mul
+		sub /verticalInterspace ;
+	verticalInterspace
+		maxInaColumnL 1 sub div /rowInterspace ;
+
+	canvasSize !y
+		maxInaColumnP portraitBoxHeight mul
+		sub /verticalPortraitInterspace ;
+	verticalPortraitInterspace
+		maxInaColumnP 1 sub div /portraitInterspace ;
+
+	landscapeInaRow landscapeInaChunk idiv /landscapeChunks ;
+	landscapeInaRow landscapeInaChunk mod /landscapeChunkRemainder ;
+
+	currentdict end
+}.
+
+
+% x y imageHeight imageMeta /renderPictureWithTitle width height
+/renderPictureWithTitle {begin  	% <<filepath filename timestamp title width height>>
+	[/xx /yy /imageHeight] let
+		width height imageHeight calcImageSizeWithFixedHeight /imageHeight ; /imageWidth ;
+
+		/yy imageHeight titleHeight add -=
+		yy titleHeight 2 div add /yt ;
+
+		[timestamp ( ) filename ( ) 
+			(xywh) [xx yy imageWidth imageHeight] (mm) d.toStringLabel 
+			( ") title (" ) filepath (\n)] s.concat ==
+
+		gsave
+		cmykTitle !_ setcmykcolor
+		imageWidth 2 mul 3 div /txtwide ;
+		xx yt [(|0|L) title] s.concat cl % render paragraph
+
+		cmykTimeStamp !_ setcmykcolor
+		xx imageWidth add yt [(|0) timestamp (\n) filename (.) s.stripAfter] s.concat cr % render paragraph
+		grestore
+
+		filepath
+			xx yy titleHeight add
+			imageHeight showJpeg 
+			titleHeight add
+
+		true {
+			gsave
+			0.93 setgray
+			xx yy imageWidth titleHeight rectstroke
+			grestore
+		} if
+
+	end
+end}.
+
+
+% <<
+% 	/orientation /horizontal
+% 	/captionFontSize 8
+% 	/titleHeight captionFontSize 3 mul
+% 	/canvasSize [[PageSize [margin !l margin !r add margin !t margin !b add]] {sub} a.forall]
+% 	/minInterspace 5 mm
+% 	/fixedImageSize 5 inch
+% 	/cmykTitle [0 0.67 0.95 0]
+% 	/cmykTimeStamp [0 0.81 0.95 0.09]
+% >> 
+% imageDir metaFile dict /layout countImage
+/layout {
+	dup d.showDict
+begin
+	% /canvasSize
+	[/canvasSize /fixedImageSize /titleHeight /minInterspace] (mm) d.showLabels
+	renderPageSeparateLP
+end}.
+
+
+% A trivial iterative minimum search.
+% epsilon x0 (x /f y) /downhill x_min
+/downhill {
+	[/epsilon /x /f] let
+		x f /y ; 
+		{ % loop
+			x epsilon add /x' ;
+			x' f /y' ;
+			y' y gt { x exit } { % ifelse
+				/x x' store
+				/y y' store
+				[([) x d.toStringAny ( ) y d.toStringAny (] )] s.concat print
+			} ifelse
+		} loop
+	end
+}.
+
+
+% 0.1 0 {sin} downhill == 0
+% 0.1 0 {cos} downhill == 0
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 2D Laoyout 
+
+% GS>clear (photoCollage.ps) run
+% PageSize: [2579.53 1729.13]
+% canvasSize: [2435.53 1585.13]
+% fixedInterspace: 8.50394
+% fixedImageSize: 216
+% titleHeight: 24
+% Main
+% <<
+% /cmykBackground arraytype [0 0 0 1]
+% /minInterspace realtype 14.1732
+% /fixedImageSize integertype 288
+% /canvasSize arraytype [2435.53 1585.13]
+% /cmykTimeStamp arraytype [0 0.81 0.95 0.09]
+% /titleHeight integertype 32
+% /orientation nametype horizontal
+% /captionFontSize integertype 8
+% /cmykTitle arraytype [0 0.67 0.95 0]
+% >>
+% canvasSize: [859.2 559.2]mm
+% fixedImageSize: 101.6mm
+% titleHeight: 11.2889mm
+% minInterspace: 5.0mm
+% [289 900.607] [290 838.601] lsCount: 55
+% psCount: 27
+% lpRatio: 2.03704
+% imageSizeRatio: 1.33333
+% landscapeWidth: 290
+% landscapeHeight: 217.5
+% landscapeBoxHeight: 249.5
+% maxInaRowL: 8
+% maxInaColumnL: 6
+% maxInaRowP: 10
+% maxInaColumnP: 5
+% portraitCount: 15
+% portraitInaRow: 3
+% portraitInterspace: -6.21652
+% landscapeInaRow: 5
+% landscapeInaChunk: 2
+% landscapeChunks: 2
+% landscapeChunkRemainder: 1
+% columnInterspace: 47.5754
+% rowInterspace: 17.6268
+% columnInterspace: 16.7835mm
+% rowInterspace: 6.21834mm
+% landscapeWidth: 102.306mm
+% landscapeHeight: 76.7292mm
+% landscapeBoxHeight: 88.0181mm
+% (2011:04:17 11:07:29 g10-2654.jpg xywh: [25.4 496.582 102.306 76.7292]mm "na bundeku" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2654.jpg\n)
+% (2011:04:18 15:50:22 g10-2670.jpg xywh: [144.489 496.582 102.306 76.7292]mm "mikula i lovre" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2670.jpg\n)
+% (2011:04:24 09:07:11 g10-2700.jpg xywh: [263.578 496.582 102.306 76.7292]mm "lovre u kadi" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2700.jpg\n)
+% Portrait skip. xy: [459.396 584.6]mm
+% (2011:04:30 13:16:01 g10-2708.jpg xywh: [476.18 496.582 102.306 76.7292]mm "nevenov ro\360endan" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2708.jpg\n)
+% (2011:05:01 12:57:26 g10-2733.jpg xywh: [595.269 496.582 102.306 76.7292]mm "savijanje cijevi" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2733.jpg\n)
+% Portrait skip. xy: [791.087 584.6]mm
+
+% (2011:05:12 07:08:49 g10-2743.jpg xywh: [25.4 402.346 102.306 76.7292]mm "jutro s nanom" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2743.jpg\n)
+% (2011:05:18 10:31:09 g10-2755.jpg xywh: [144.489 402.346 102.306 76.7292]mm "kola\350i" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2755.jpg\n)
+% (2011:05:20 17:50:30 g10-2808.jpg xywh: [263.578 402.346 102.306 76.7292]mm "marina" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2808.jpg\n)
+% Portrait skip. xy: [459.396 490.364]mm
+% (2011:05:21 07:13:53 g10-2833.jpg xywh: [476.18 402.346 102.306 76.7292]mm "mama i bebe" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2833.jpg\n)
+% (2011:05:22 14:27:31 g10-2859.jpg xywh: [595.269 402.346 102.306 76.7292]mm "radost u vrtu" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2859.jpg\n)
+% Portrait skip. xy: [791.087 490.364]mm
+
+% (2011:05:22 14:54:50 g10-2876.jpg xywh: [25.4 308.109 102.306 76.7292]mm "tri gracije" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2876.jpg\n)
+% (2011:06:09 09:01:07 g10-2913.jpg xywh: [144.489 308.109 102.306 76.7292]mm "uspavanko" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2913.jpg\n)
+% (2011:06:11 05:49:36 g10-2919.jpg xywh: [263.578 308.109 102.306 76.7292]mm "doru\350ak u prirodi" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2919.jpg\n)
+% Portrait skip. xy: [459.396 396.127]mm
+% (2011:06:11 07:49:08 g10-2935.jpg xywh: [476.18 308.109 102.306 76.7292]mm "konji" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2935.jpg\n)
+% (2011:06:11 10:11:00 g10-2939.jpg xywh: [595.269 308.109 102.306 76.7292]mm "adam i mikula" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2939.jpg\n)
+% Portrait skip. xy: [791.087 396.127]mm
+
+% (2011:06:11 13:07:51 g10-2972.jpg xywh: [25.4 213.873 102.306 76.7292]mm "piknik" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2972.jpg\n)
+% (2011:06:11 13:10:46 g10-2977.jpg xywh: [144.489 213.873 102.306 76.7292]mm "prekrasan dan" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2977.jpg\n)
+% (2011:06:11 15:16:18 g10-2981.jpg xywh: [263.578 213.873 102.306 76.7292]mm "adam dr\236i lovru" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2981.jpg\n)
+% Portrait skip. xy: [459.396 301.891]mm
+% (2011:06:11 16:37:57 g10-2991.jpg xywh: [476.18 213.873 102.306 76.7292]mm "mama na konju" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2991.jpg\n)
+% (2011:06:11 18:39:55 g10-2997.jpg xywh: [595.269 213.873 102.306 76.7292]mm "mikula na konju" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2997.jpg\n)
+% Portrait skip. xy: [791.087 301.891]mm
+
+% (2011:06:11 19:40:50 g10-3005.jpg xywh: [25.4 119.636 102.306 76.7292]mm "d\236embe" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-3005.jpg\n)
+% (2011:06:22 19:23:08 g10-3028.jpg xywh: [144.489 119.636 102.306 76.7292]mm "u filip-jakovu" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-3028.jpg\n)
+% (2011:06:22 19:37:09 g10-3033.jpg xywh: [263.578 119.636 102.306 76.7292]mm "vrijeme za sladoled" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-3033.jpg\n)
+% Portrait skip. xy: [459.396 207.654]mm
+% (2011:06:26 11:25:05 srima-1000910.jpg xywh: [476.18 119.636 102.306 76.7292]mm "kapetan mikula mali" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/srima-1000910.jpg\n)
+% (2011:06:29 16:39:42 srima.jpg xywh: [595.269 119.636 102.306 76.7292]mm "na biciklama" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/srima.jpg\n)
+% Portrait skip. xy: [791.087 207.654]mm
+
+% (2011:07:06 18:35:06 srima-1000935.jpg xywh: [25.4 25.4 102.306 76.7292]mm "sa katjom" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/srima-1000935.jpg\n)
+% (2011:07:12 20:51:32 g10-3112.jpg xywh: [144.489 25.4 102.306 76.7292]mm "u kadi" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-3112.jpg\n)
+% (2011:07:17 09:14:19 g10-3114.jpg xywh: [263.578 25.4 102.306 76.7292]mm "na ciki" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-3114.jpg\n)
+% Portrait skip. xy: [459.396 113.418]mm
+% (2011:07:17 11:21:39 g10-3116.jpg xywh: [476.18 25.4 102.306 76.7292]mm "piknik" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-3116.jpg\n)
+% (2011:07:17 12:34:34 g10-3125.jpg xywh: [595.269 25.4 102.306 76.7292]mm "ribi\350" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-3125.jpg\n)
+% Portrait skip. xy: [791.087 113.418]mm
+
+% Landscape skip. xy: [127.706 584.6]mm
+% Landscape skip. xy: [246.795 584.6]mm
+% Landscape skip. xy: [365.884 584.6]mm
+% (2011:04:13 17:58:51 g10-2618.jpg xywh: [382.667 471.006 76.7292 102.306]mm "tata i sinovi" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2618.jpg\n)
+% (2011:04:15 17:36:31 g10-2637.jpg xywh: [382.667 359.604 76.7292 102.306]mm "marina, vjeko i mikula" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2637.jpg\n)
+% (2011:04:17 11:08:22 g10-2657.jpg xywh: [382.667 248.203 76.7292 102.306]mm "bebe na drvu" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2657.jpg\n)
+% (2011:04:17 11:10:58 g10-2659.jpg xywh: [382.667 136.801 76.7292 102.306]mm "pi\232onja" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2659.jpg\n)
+% (2011:04:24 09:04:56 g10-2697.jpg xywh: [382.667 25.4 76.7292 102.306]mm "lovre se kupa" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2697.jpg\n)
+% Landscape skip. xy: [501.756 584.6]mm
+% Landscape skip. xy: [620.845 584.6]mm
+% (2011:05:01 08:00:19 g10-2725.jpg xywh: [637.629 471.006 76.7292 102.306]mm "nana dr\236i lovru" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2725.jpg\n)
+% (2011:05:01 12:50:17 g10-2729.jpg xywh: [637.629 359.604 76.7292 102.306]mm "nikola i vjeko" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2729.jpg\n)
+% (2011:05:01 12:50:51 g10-2730.jpg xywh: [637.629 248.203 76.7292 102.306]mm "nikola i mikula" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2730.jpg\n)
+% (2011:05:07 07:33:44 g10-2737.jpg xywh: [637.629 136.801 76.7292 102.306]mm "jedan na drugom" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2737.jpg\n)
+% (2011:05:22 13:58:00 g10-2842.jpg xywh: [637.629 25.4 76.7292 102.306]mm "draga lucija" /boris/RE/Languaging/PostScript/knjiga/2011-09-09/images/g10-2842.jpg\n)
+
+% imageTotal: 40
+% GS>
+

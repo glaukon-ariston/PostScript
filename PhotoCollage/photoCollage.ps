@@ -1,0 +1,250 @@
+%!PS-Adobe-3.0
+%%Title: photoCollage.ps
+%%BoundingBox: 0 0 2579 1729
+%%DocumentPaperSizes: A0
+%%DocumentMedia: A0 2579 1729 0 () ()
+%%Orientation: Portrait
+%%Creator: github.com/glaukon-ariston
+%%Copyright: (C) 2017 Galukon Ariston. All Rights Reserved
+%%Date: 11/01/2017
+%%LanguageLevel: 3
+%%EndComments
+
+% The photo collage is layed out in the fixed sized rows (same height).
+% The row inter space is adjusted so the rows appear equally spaced out vertically.
+% Inside each row every image has the same height, but possibly varies in width, depending on
+% its orientation and its aspect ratio.
+% The horizontal inter space (between images) is fixed, but the left and right row margin is
+% adjusted so the whole row gets centered.
+% TODO: Alternatively, the horizontal inter space can be adjusted so the images appear justified 
+% and run from edge to edge (from the left to the right margin).
+
+% gswin32c -dNOPAUSE -dCompatibilityLevel#1.4 -dOSTACKPRINT -dESTACKPRINT -sFONTPATH#"C:/Windows/Fonts"
+
+/debug true def
+/orientation /vertical def
+
+%%BeginProlog
+
+(lib/Resource/ProcSet/net.anastigmatix.MetaPre) run
+(lib/Resource/ProcSet/net.anastigmatix.StreamIO) run
+(lib/Resource/ProcSet/net.anastigmatix.BinaryIO) run
+(lib/Resource/Category/net.anastigmatix.filter) run
+%(lib/Resource/net.anastigmatix.filter/FlateDecode) run
+%(lib/Resource/net.anastigmatix.filter/DSCDecode) run
+%(lib/Resource/net.anastigmatix.filter/DSCDataEncode) run
+%(lib/Resource/net.anastigmatix.filter/InUPathDecode) run
+%(lib/Resource/net.anastigmatix.filter/WSMarkEncode) run
+(lib/Resource/ProcSet/net.anastigmatix.Import) run
+(lib/Resource/ProcSet/net.anastigmatix.PNG) run
+(lib/Resource/ProcSet/net.anastigmatix.Order) run
+
+/net.anastigmatix.Import /ProcSet findresource begin
+/net.anastigmatix.PNG    /ProcSet findresource begin
+/net.anastigmatix.Order  /ProcSet findresource begin
+userdict begin
+
+(include/gonzo.ps) run
+% An introduction to gonzo justification for large blocks of text.
+gutility begin              % turn on the gonzo utilities
+nuisance begin              % turn on the nuisance commands
+printerror                  % turn on the printing error trapper  
+gonzo begin                 % turn on the gonzo justification 
+
+
+(include/glyph-encoding.ps) run
+(lib/base/prelude.ps) run
+prelude begin
+
+(layout/2d.ps) run
+
+%%EndProlog
+
+
+%%BeginSetup
+
+[ % landscape format
+	910 mm %width
+	610 mm %height
+] [/PageSize] #==
+
+% http://pages.cs.wisc.edu/~rjl/landscape/
+<< /PageSize PageSize >> setpagedevice
+
+
+/margin [72 72 72 72]. 		% [top left bottom right]
+
+
+/captionFontSize 8 def
+/text-font-size captionFontSize def
+
+(include/typesetting-setup.ps) run
+
+/font0 /SansSerif-1250 captionFontSize gonzofont
+
+[
+	[PageSize 
+		[margin !l margin !r add 
+			margin !t margin !b add]]
+	{sub} 
+	a.forall
+] [/canvasSize] #==
+3 mm [/fixedInterspace] #==
+3 inch [/fixedImageSize] #== 
+captionFontSize 3 mul [/titleHeight] #==
+
+% orientation horizontal eq
+% {
+% 	% horizontal
+% 	[fixedImageSize titleHeight] sum [/fixedStripSize] #==
+% 	canvasSize !y fixedStripSize div floor [/totalStripCount] #==
+% 	canvasSize !y 
+% 		fixedStripSize totalStripCount mul
+% 		sub
+% 		totalStripCount 1 sub
+% 		div
+% 		[/verticalInterspace] #==
+% 	/variableInterspace verticalInterspace def
+% } {
+% 	% vertical
+% 	fixedImageSize [/fixedStripSize] #==
+% 	canvasSize !x fixedStripSize div floor [/totalStripCount] #==
+% 	canvasSize !x 
+% 		fixedStripSize totalStripCount mul
+% 		sub
+% 		totalStripCount 1 sub
+% 		div
+% 		[/horizontalInterspace] #==
+% 	/variableInterspace horizontalInterspace def
+% } ifelse
+
+% https://color.adobe.com/create/color-wheel
+%/cmykBackground [0 0 0 1] def
+/cmykBackground [0 0 0 0] def
+/cmykTitle [0 0.67 0.95 0] def
+/cmykTimeStamp [0 0.81 0.95 0.09] def
+
+%%EndSetup
+
+
+%%BeginScript
+
+/buildParagraph {<<>>begin % str paragraph -> str
+	exch leftTrim
+	(\n|h\n) 3 array astore
+	s.concat % select gonzo font
+end} def
+
+
+
+/maximizeTitle {<<>>begin % title width current-font-size -> font-size
+	[/title /width /current-font-size] #=
+	title ( \n\r\t;) splice-words [/words] #=
+	[/title /width /words] trace-vars
+	[words {stringwidth pop} forall] min-max [/min-width /max-width] #=
+	[/min-width /max-width] trace-vars
+	width max-width div current-font-size mul floor
+end} def
+
+
+
+/renderTitle {<<>>begin % title -> -
+	/title exch def
+	/paragraph (|1|C) def
+
+	(Rendering text\n) print
+	%font1
+	%title 
+	%	PageSize !_ pop marginLeft marginRight add sub % width
+	%	title-font-size
+	%	maximizeTitle [/title-font-size] #=
+	%	[/title-font-size] trace-vars
+	%/font1 /SansSerif-1250 title-font-size gonzofont
+	
+	title { (;) search
+		{ exch pop % discard match
+			paragraph buildParagraph [/paragraph] #=
+		} { 
+			paragraph buildParagraph [/paragraph] #=
+			exit 
+		} ifelse 
+	} loop
+	
+	PageSize !_
+		margin !t sub title-font-size sub
+		exch pop margin !r exch
+	paragraph cl % render paragraph
+	showpage landscape
+end} def
+
+
+/renderImage {<<>>begin % imageMeta x y -> width height
+	[/imageMeta /x /y] #=
+	imageMeta !_ [/filePath /fileName /timeStamp /title] #=
+	filePath jpegSize calcImageSize [/imageWidth /imageHeight] #=
+	y titleHeight 2 div add [/yt] #=
+
+	gsave
+	[(Image: ) fileName (\n)] s.concat print
+	[(Caption: ) title (\n)] s.concat print
+	cmykTitle !_ setcmykcolor
+	/txtwide imageWidth 2 mul 3 div def
+	x yt [(|0|L) title] s.concat cl % render paragraph
+
+	[(TimeStamp: ) timeStamp (\n)] s.concat print
+	cmykTimeStamp !_ setcmykcolor
+	x imageWidth add yt [(|0) timeStamp (\n) fileName stripAfterDot] s.concat cr % render paragraph
+	grestore
+
+	filePath
+	x y titleHeight add
+	imageHeight
+		showJpeg titleHeight add
+end} def
+
+
+/renderBackground {<<>>begin % - -> -
+	cmykBackground !_ setcmykcolor
+	0 0 PageSize !_ rectfill
+end} def
+
+
+%% Main
+(Main\n) print
+<<>>begin
+	% /pathPrefix (../knjiga/2011-09-09/) def
+	%/pathPrefix (/Tata/Languaging/PostScript/knjiga/2011-09-09/) def
+	/pathPrefix (/boris/RE/Languaging/PostScript/knjiga/2011-09-09/) def
+	/imageDir [pathPrefix (images/)] s.concat def
+	%/metaFile [pathPrefix (image-title-date-taken__test.txt)] s.concat (r) file def
+	/metaFile [pathPrefix (image-title-date-taken_2.txt)] s.concat def
+	
+	debug { 
+		gsave
+		debug-gray setgray
+		margin !l margin !b canvasSize !_ rectstroke
+		grestore
+	} if
+	
+	renderBackground
+	
+	imageDir metaFile 
+	<<
+		/orientation /horizontal
+		/captionFontSize 8
+		/titleHeight captionFontSize 3 mul
+		/canvasSize [[PageSize [margin !l margin !r add margin !t margin !b add]] {sub} a.forall]
+		/minInterspace 3 mm
+		/fixedImageSize 4 inch
+		/cmykTitle [0 0.67 0.95 0]
+		/cmykTimeStamp [0 0.81 0.95 0.09]
+	>> 
+	layout [/imageTotal] #=	
+	[/imageTotal] d.showKeys
+	% showpage
+end
+
+%%EndScript
+
+%%Trailer
+%%EOF

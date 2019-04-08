@@ -1,0 +1,63 @@
+%!PS-Adobe-3.0
+%%Title: preludeFile.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeFile <<>> def
+%preludeFile begin
+
+
+% filePath /jpegSize wx wy
+/jpegSize { <<>> begin
+	(r) file [/imageFile ]#=
+	gsave 
+	imageFile
+		StatJFIF [/imageFile /units /Xden /Yden /prec /X /Y /Nf /version] #=
+	units 0 eq { 1 300 300 [/units /Xden /Yden] #= } if 	% if no physical dimension specified, assume 300dpi resolution
+	units Xden Yden prec X Y Nf 
+		ReadyJFIF [/X /Y /imagedict /wx /wy] #=
+	imageFile closefile
+	grestore 
+	wx wy
+end} def
+
+
+% imageFile x y /showJpeg wx wy
+/showJpeg { <<>> begin
+	[/imagePath /x /y /height] #=
+	imagePath (r) file [/imageFile]#=
+	
+	gsave 
+	imageFile
+		StatJFIF [/imageFile /units /Xden /Yden /prec /X /Y /Nf /version] #=
+	units 0 eq { 1 300 300 [/units /Xden /Yden] #= } if 	% if no physical dimension specified, assume 300dpi resolution
+	units Xden Yden prec X Y Nf 
+		ReadyJFIF [/X /Y /imageDict /wx /wy] #=
+
+	x y translate
+	height wy div dup scale
+
+	imageFile X Y imageDict 
+		ExecJPEG
+	imageFile closefile
+	grestore 
+	wx wy div height mul height
+end} def
+
+
+%end	% preludeFile
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

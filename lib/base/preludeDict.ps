@@ -1,0 +1,94 @@
+%!PS-Adobe-3.0
+%%Title: preludeDict.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeDict <<>> def
+%preludeDict begin
+
+
+% def names into the current dictionary
+% trace all the assignements when done
+% value1..valueN [nameN..name1] /$== _
+/$== {
+	dup dup length 2 add 1 roll	% [name1..nameN] valueN..value1 [name1..nameN]
+	$=
+	d.showKeys
+} bind def
+
+
+%def names into the current dictionary
+% trace all the assignements when done
+% value1..valueN [name1..nameN] /#= _
+/#== {
+	a.reverse $==
+} bind def
+
+
+% If key is already defined somewhere, modify its value. 
+% Otherwise create a new key in the current dictionary.
+% key value /gdef _
+/gdef {
+	1 index where { % key value dict
+		3 1 roll put % roll is ror (rotate to the right)
+	} { % key value 
+		def
+	} ifelse
+} bind def
+
+
+% value1..valueN [name1..nameN] /$global _
+/$global { % [names] -> -
+	{exch gdef} forall
+} bind def
+
+
+% Swaps the values of the provided keys.
+% key key /swap _
+/swap {
+	dup load exch	% key1 value2 key2 
+	3 -1 roll		% value2 key2 key1
+	dup load 		% value2 key2 key1 value1
+	exch			% value2 key2 value1 key1
+	4 1 roll		% key1 value2 key2 value1
+	store store
+} bind def
+
+
+% Modify the value associated with the key using the provieded proc.
+% key proc /modify _
+/modify {
+	1 index load exch exec store
+}.
+
+
+% Increment the key's value by the specified amount
+% key amount /+= -
+/+= {
+	1 index load add store
+}.
+
+
+% Decrement the key's value by the specified amount
+% key amount /+= -
+/-= {
+	1 index load exch sub store
+}.
+
+
+%end	% preludeDict
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

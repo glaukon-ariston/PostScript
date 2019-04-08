@@ -1,0 +1,45 @@
+%!PS-Adobe-3.0
+%%Title: preludeStack.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeStack <<>> def
+%preludeStack begin
+
+% Three element stack manipulations
+
+% a1 a2 a3 /&123 a1 a2 a3
+/&123 {}.
+
+% a1 a2 a3 /&132 a1 a3 a2
+/&132 {exch}.
+
+% a1 a2 a3 /&312 a3 a1 a2
+/&312 {3 1 roll}.
+
+% a1 a2 a3 /&321 a3 a2 a1
+/&321 {3 1 roll exch}.
+
+% a1 a2 a3 /&231 a2 a3 a1
+/&231 {3 -1 roll}.
+
+% a1 a2 a3 /&213 a2 a1 a3
+/&213 {3 1 roll exch 3 -1 roll}.
+
+
+%end	% preludeStack
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

@@ -1,0 +1,38 @@
+%!PS-Adobe-3.0
+%%Title: preludeUnits.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 14/01/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeUnits <<>> def
+%preludeUnits begin
+
+
+/mm { 25.4 div 72 mul } bind def
+/inch { 72 mul } bind def
+/pt {} bind def  % 1 mul 
+/um { mm 1000 div } bind def
+/pt2inch { 72 div } bind def
+/pt2mm { 72 div 25.4 mul } bind def
+/pt2um { pt2mm 1000 mul } bind def
+
+/A4 [210 mm  297 mm] def
+/A4Portrait [210 mm  297 mm] def
+/A4Landscape [297 mm 210 mm] def
+
+
+%end	% preludeUnits
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

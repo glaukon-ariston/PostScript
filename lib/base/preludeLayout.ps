@@ -61,7 +61,7 @@
 	[/labels /nextPos /labelMargin] let
 		{
 			[currentpoint] [/.pos] let
-				/nextPos ' a.deepCopy a.localBind
+				/nextPos ' a.localBind
 			end
 		} /advance ;
 
@@ -92,6 +92,27 @@
 %				.pos beatSpacing neg !y+=
 %			} labelMargin showLabels
 %		grestore
+
+
+
+% Horizontal scan from left to right, bottom to top.
+% x y areaW areaH tileW tileH {x y tileW tileH /proc} /tile -
+/tile {
+	[0 0]
+	[/x /y /areaW /areaH /tileW /tileH /proc /pos] let
+		{
+			y tileH  y areaH tileH multiple add {
+				pos exch !y=
+				x tileW  x areaW tileW multiple add {
+					pos exch !x=
+					pos !_ tileW tileH 
+						proc exec
+				} for
+			} for
+		} a.localBind
+	end
+	exec
+}.
 
 
 %end	% preludeLayout

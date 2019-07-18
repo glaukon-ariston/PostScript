@@ -11,6 +11,12 @@
 %preludeDebug begin
 
 
+% string /printLn -
+/printLn {
+	print (\n) print
+}.
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Reflection
 
 /s.BUFFER_SIZE 128 def
@@ -43,7 +49,7 @@
 /d.toStringDict {
     [ (<<\n) 3 -1 roll
         { [ (/) 4 2 roll
-            d.toString
+            d.toStringAny		% d.toString
             exch 
             d.toStringAny 
             exch 
@@ -81,6 +87,37 @@
 % any /d.toString string
 /d.toString {
     dup type //d.showConstructors exch get exec
+}.
+
+
+/d.showConstructors' <<
+    /stringtype 		{}
+    /dicttype 			/d.toStringAny '
+    /arraytype 			/d.toStringArray* '
+    /packedarraytype 	/d.toStringArray* '
+    /nametype 			/d.toStringAny '
+    /booleantype 		/d.toStringAny '
+    /nulltype 			/d.toStringAny '
+    /operatortype 		/d.toStringAny '
+    /filetype 			/d.toStringAny '
+    /fonttype 			/d.toStringAny '
+    /realtype 			/d.toStringAny '
+    /gstatetype 		/d.toStringAny '
+    /savetype 			/d.toStringAny '
+    /integertype 		/d.toStringAny '
+    /marktype 			/d.toStringAny '
+>> .
+
+
+% any /d.toString string
+/d.toString' {
+    dup type //d.showConstructors' exch get exec
+}.
+
+
+% any /trace any
+/trace {
+	dup d.toString print
 }.
 
 

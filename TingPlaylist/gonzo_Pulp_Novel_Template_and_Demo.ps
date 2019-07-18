@@ -1,0 +1,130 @@
+%!PS-Adobe-3.0
+%%Title: Pulp Novel Template and Demo
+
+% generatePdf.bat gonzo_Pulp_Novel_Template_and_Demo
+
+(../lib/gonzo.ps) run
+
+300 dict /pulpnovel exch def
+pulpnovel begin
+
+% All fonts MUST defer till run time!
+/templatefonts {
+	/font0 /Bookman-Demi 36 gonzofont 	% initial raised cap
+	/font1 /Bookman-Light 9 gonzofont 	% main text
+	/font2 /Bookman-LightItalic 9 gonzofont		% italics
+	/font3 /Bookman-Demi 10 gonzofont	% headers
+} def
+
+% values used by gonzo justify ...
+/cstretch 0.2 def 			% minimum character kerning
+/lastlinestretch 0.03 def 	% stretch last paragraph line
+/pm 10 def 					% use paragraph indents
+/sstretch -0.1 def 			% minimum space kerning
+/txtwide 255 def 			% width of text
+/lmpos 30 def 				% left margin
+/ybot 62 def 				% bottom column reference
+/yinc 11 def 				% vertical line spacing
+/ytop ybot yinc 39 mul add def 		% BASE of top line #40 reference
+/pagenum 1 def 				% running pagenumber
+
+% colcheck does all the work in a pagemaker. It is
+% automatically called at the start of each new printable
+% line. It can make room for figures, etc.
+
+/colcheck {
+	ypos ybot lt {
+		showpage 
+		/ypos ytop def 
+		header
+		footer
+	} if
+} def
+
+
+% This header does nothing; the footer centers an
+% unadorned page number
+
+/header { } def
+
+/footer {
+	save 
+	/footsnap exch def 
+	/ybot1 ybot def 
+	/ybot -9999 def 
+	rpagenum ( ) cvs dup stringwidth pop 2
+	div txtwide 2 div xpos add sub neg exch ybot1 15 sub exch
+	font1 cc footsnap restore 
+	/rpagenum rpagenum 1 add def
+} def
+
+% templatestartup sets the margins and gets the header and
+% footer going on the first page
+
+/templatestartup { 
+	templatefonts 
+	font1 
+	/xpos lmpos def
+	/ypos ytop def 
+	/gonzojust true def 
+	/rslashok true def
+	/rpagenum pagenum def 
+	header 
+	footer
+} def
+
+end % simplepages template
+
+%%%%%%%%%%%
+
+% //// change to your novel ///
+
+gonzo begin
+pulpnovel starttemplate
+startgonzo
+|C|3PROLOGUE
+|0|FD|1arcie didn’t expect to live. With the hand she could
+move enough to reach them, she tore unit and command
+patches from her uniform shirt\261left only her nametag,
+rank and flight surgeon’s insignia. She drew out the chain
+from around her neck, yanked off the two crystal pendants
+hanging with her ID tags, and shoved them into the corner
+behind her.|p
+"Mama?" The child stirred on her lap, trying to push
+himself back. "Why are\261" She put a finger to his lips,
+her other hand cupping his head to prevent its bump- ing
+the metal bulkhead. "Hush, Tris."
+She could barely whisper; she sat on the bottom of a locker
+meant only for a pressure suit\261one of four in the
+maintenance compartment\261with the toddler held snug
+between her body and her drawn-up knees.
+Outside ship noises reached her: the roar of engines
+crescendoing toward thrust into lightskip\261the fourth
+attempt. She braced her head well back in the corner behind
+the pressure suit, hugged Tristan to her breast and locked
+her teeth.
+REST OF STORY GOES HERE . . .
+She lunged left into the cross corridor, her right fist
+punching the manual trigger on its bulkhead. The shield
+door dropped behind her with a whoosh that was lost in a
+crunch and her pursuer’s garbled scream. She pressed
+Tristan’s face to her shoulder and forced herself not to look
+back.
+The cross passage opened on one parallel to the concourse
+she had sealed. It led to the lifepods\261if they hadn’t
+already been jettisoned.
+She pressed herself to the bulkhead to listen for pursuers
+and to peer into the concourse. It was empty, up and down,
+except for the smoke-obscured shapes of bodies on the
+deck. She tried to set the child on his feet, to rest her arm,
+but he only clung to her, wide- eyed with the recognition of
+her fear.
+Darcie smoothed his hair and kissed his forehead. "Come
+on then, little soldier," she said, collecting him again, and
+slipped on into the passage. Smoke from screen grenades
+stung her eyes, making them run and blurring her vision.
+She stumbled over a body and paused, panting. One of the
+surface troopers, a young man she didn’t know. Flung
+beyond his hand lay an energy pistol.
+|x
+showpage

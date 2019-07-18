@@ -13,25 +13,120 @@
 
 % fontSize /setFontSize _
 /setFontSize {
-	currentfont /FontMatrix get 0 get	% fontSize currentFontSize
-	div % fontSize/currentFontSize
-	currentfont exch scalefont setfont 
+    currentfont /FontMatrix get 0 get   % fontSize currentFontSize
+    div % fontSize/currentFontSize
+    currentfont exch scalefont setfont 
 }.
 
 
 % string /textSize width height
 /textSize {
-	gsave                                  % save graphic context
-		0 0 moveto                         % move to some point 
-		false charpath flattenpath pathbbox		% gets text path bounding box (LLx LLy URx URy)
-		3 1 roll sub					% LLx URx URy-LLy
-		3 -1 roll exch sub				% URy-LLy URx-LLx
-		exch
-	grestore                               % restore graphic context
+    gsave                                  % save graphic context
+        0 0 moveto                         % move to some point 
+        false charpath flattenpath pathbbox     % gets text path bounding box (LLx LLy URx URy)
+        3 1 roll sub                    % LLx URx URy-LLy
+        3 -1 roll exch sub              % URy-LLy URx-LLx
+        exch
+    grestore                               % restore graphic context
 }.
 
 
-%end	% preludeFont
+
+% ‘‘ReEncodeSmall’’ generates a new re-encoded font. It
+% takes 3 arguments: the name of the font to be
+% re-encoded, a new name, and an array of new character
+% encoding and character name pairs (see the definition of
+% the ‘‘scandvec’’ array below for the format of this
+% array). This method has the advantage that it allows the
+% user to make changes to an existing encoding vector
+% without having to specify an entire new encoding
+% vector. It also saves space when the character encoding
+% and name pairs array is smaller than an entire encoding
+% vector.
+% /Times-Roman /Times-Roman-1250 Windows1250 newFontEncoding
+/newFontEncoding { <<>> begin
+    /newCodesAndNames exch def
+    /newFontName exch def
+    /baseFontName exch def
+
+    % Get the font dictionary on which to base the re-encoded version.
+    /baseFontDict baseFontName findfont def
+    % Create a dictionary to hold the description for the re-encoded font.
+    /newFont baseFontDict maxlength dict def
+    
+    baseFontDict 
+        % Copy all the entries in the base font dictionary to the new dictionary except for the FID field.
+        { 
+            exch dup /FID ne { 
+                dup /Encoding eq
+                % Make a copy of the Encoding field.
+                { exch dup length array copy
+                    newFont 3 1 roll put }
+                { exch newFont 3 1 roll put }
+                ifelse
+            } { 
+                % Ignore the FID pair.
+                pop pop 
+            } ifelse
+        } forall
+    
+    % Install the new name.
+    newFont /FontName newFontName put
+    % Modify the encoding vector. First load the new encoding and name pairs onto the operand stack.
+    newCodesAndNames aload pop
+    newCodesAndNames length 2 idiv
+        % For each pair on the stack, put the new name into the designated position in the encoding vector. 
+        { newFont /Encoding get 3 1 roll put}
+        repeat
+    % Now make the re-encoded font description into a POSTSCRIPT font. 
+    % Ignore the modified dictionary returned on the operand stack by the definefont operator.
+    newFontName newFont definefont pop
+end} def
+
+
+/Windows1250 [
+    16#8a   /Scaron     % Š U+0160 
+    16#9a   /scaron     % š U+0161 
+    16#8e   /Zcaron     % Ž U+017D 
+    16#9e   /zcaron     % ž U+017E 
+    16#d0   /Dcroat     % Đ U+0110 
+    16#f0   /dcroat     % đ U+0111 
+%   16#f0   /dmacron    % đ U+0111 
+%   16#f0   /dslash     % đ U+0111 
+%   16#f0   /dstroke    % đ U+0111 
+    16#c6   /Cacute     % Ć U+0106 
+    16#e6   /cacute     % ć U+0107 
+    16#c8   /Ccaron     % Č U+010C 
+    16#e8   /ccaron     % č U+010D 
+] def
+
+
+
+% fontSize marginLeft marginTop columnWidth /gonzoInit _
+/gonzoInit {
+    /txtwide ;
+    /ytop ;                     % base of top text line 
+    /ypos ytop def              % select top text line
+    /xpos ;                     % left margin
+    1.1 mul /yinc ;             % line spacing
+    /cstretch  0.02 def         % minimum extra space between characters  
+    /sstretch 0 def             % minimum extra space between spaces
+
+    /maxsstretch 0.25 def       % trip point for character stretching     
+    /maxcstretch 0.1 def        % maximum allowable character stretching
+    /dropcount 3 def            % number of lines the drop cap drops
+    /dropindent 5 def           % indentation for the drop cap
+    /lastlinestretch 0.006 def  % slight stretch to last paragraph line
+
+    /overstrikechar (\320) def   % overstrike character 
+    /overstrikeht 0.7 def        % vertical shift of overstrike character
+
+    /pm 1.5 def                  % paragraph margin
+    /kern 0.1 def                % one point of custom kerning
+}.
+
+
+%end    % preludeFont
 
 %%EndProlog
 

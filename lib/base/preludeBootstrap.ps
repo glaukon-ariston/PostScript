@@ -79,6 +79,12 @@
 }.
 
 
+% value1..valueN [name1..nameN] /let* _
+/let! {
+	a.reverse {exch store} forall
+}.
+
+
 % Make sure you end the implicitly created dictionary!
 % value1..valueN [name1..nameN] /let _
 /let {
@@ -213,16 +219,64 @@
 %
 % proc /a.localBind proc
 /a.localBind {
-	dup wcheck not {
-		a.deepCopy
-	} if
-	dup currentdict a.dictBind 
+	% dup wcheck not { a.deepCopy } if
+	a.deepCopy dup currentdict a.dictBind
 }.
 
 
 % proc /a.localBind* proc
 /a.localBind* {
 	a.localBind bind
+}.
+
+
+% [array1 array2 ... arrayN] proc /a.forall* proc()..proc()
+/a.forall* {
+	mark mark 4 -1 roll { uncons counttomark 1 add 1 roll } forall ]		% proc mark a1..an [[tail]]
+	% end of iteration check
+	{dup 0 get length 0 eq { pop exit } if} /exec cvx 						% proc mark a1..an [[tail]] check exec
+	counttomark 2 add -2 roll 												% a1..an [[tail]] check exec proc mark
+	% create the continuation
+	pop dup mark 
+	/exec cvx 																% a1..an [[tail]] check exec proc proc mark exec
+	7 3 roll																% a1..an proc mark exec [[tail]] check exec proc
+	/a.forall* cvx
+	] 
+	cvx  		% a1..an proc { exec [[tail]] check.. proc a.forall }
+	exec
+}.
+
+
+% decoupled for-loop/iterator-variable construct
+% https://groups.google.com/forum/#!searchin/comp.lang.postscript/looping$20context|sort:date/comp.lang.postscript/3gP89-WCRdY/n9hPXAncAAAJ
+%
+% [array1 array2 ... arrayN] proc /a.forall proc()..proc()
+/a.forall {
+	1 index length 0 eq { pop pop } { % ifelse 				length(ass) > 0
+		1 index 0 get length 0  eq { pop pop } { % ifelse	length(ass[0]) > 0
+			{ a.forall* } loop
+		} ifelse
+	} ifelse
+}.
+
+
+% any any /deepEq bool
+/deepEq { 
+	2 copy type exch type ne { {eq}	} { % ifelse
+		dup type /arraytype ne { {eq} } { % ifelse
+			2 copy length exch length ne { {eq} } { % ifelse
+				% if we got to here then we have two array objects of equal lengths to compare 
+				% NB: {} type == /arraytype
+				[ &312 ] {true} exch
+				{
+					deepEq not { 
+						pop {false} exit 
+					} if 
+				} a.forall
+			} ifelse
+		} ifelse
+	} ifelse
+	exec
 }.
 
 
@@ -268,14 +322,6 @@
 }.
 
 
-% Assertions
-% [
-% 	{ [] 3 cons 2 cons 1 cons [1 2 3] deepEq }
-% 	{ () 67 cons 66 cons 65 cons (ABC) deepEq } 
-% 	{ {} /add ' cons 2 cons 1 cons {1 2 add} deepEq } 
-% ] d.assert!
-
-
 % [a1..an] x /append [a1..an x]
 /append {
 	% The following code is equivalent to: 
@@ -290,12 +336,10 @@
 }.
 
 
-% Assertions
-% [
-% 	{ [] 1 append 2 append 3 append [1 2 3] deepEq }
-% 	{ () 65 append 66 append 67 append (ABC) deepEq } 
-% 	{ {} 1 append 2 append /add ' append {1 2 add} deepEq } 
-% ] d.assert!
+% Append an element to the end of a list.
+% 
+% snoc :: [a] -> a -> [a]
+/snoc /append cvx def
 
 
 % Extract the first element of a list, which must be non-empty
@@ -310,6 +354,10 @@
 % Extract the last element of a list, which must be finite and non-empty.
 %
 % last :: [a] -> a
+% [a1..an] /last an
+/last {
+	dup length 1 sub get
+}.
 
 
 % Extract the elements after the head of a list, which must be non-empty.
@@ -324,6 +372,10 @@
 %Return all the elements of a list except the last one. The list must be non-empty.
 %
 % init :: [a] -> [a]
+% [a1..an] /init [a1..an-1]
+/init {
+	dup length 1 sub 0 exch getinterval
+}.
 
 
 % Decompose a list into its head and tail. If the list is empty, returns Nothing. 
@@ -334,6 +386,15 @@
 % [a1..an] /uncons [a2..an] a1
 /uncons {
 	dup tail exch head
+}.
+
+
+% If the list is empty returns Nothing, otherwise returns the init and the last.
+% 
+% unsnoc :: [a] -> Maybe ([a], a)
+% [a1..an] /unsnoc [a1..an-1] an
+/unsnoc {
+	dup init exch last
 }.
 
 

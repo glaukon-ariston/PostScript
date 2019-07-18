@@ -11,6 +11,21 @@
 %preludeDict begin
 
 
+% [a] [/keys] /unpack -
+/unpack {
+	exch aload length 1 add -1 roll
+	let*
+}.
+
+
+% Use /store instead of /def to assign new value.
+% [a] [/keys] /unpack! -
+/unpack! {
+	exch aload length 1 add -1 roll
+	let!
+}.
+
+
 % def names into the current dictionary
 % trace all the assignements when done
 % value1..valueN [nameN..name1] /$== _
@@ -69,7 +84,27 @@
 % Increment the key's value by the specified amount
 % key amount /+= -
 /+= {
-	1 index load add store
+	1 index load 
+	dup type
+	<<
+	    /stringtype 		{append}
+	    /dicttype 			{false d.assert}
+	    /arraytype 			{append}
+	    /packedarraytype 	/d.toStringArray* '
+	    /nametype 			{false d.assert}
+	    /booleantype 		{false d.assert}
+	    /nulltype 			{false d.assert}
+	    /operatortype 		{false d.assert}
+	    /filetype 			{false d.assert}
+	    /fonttype 			{false d.assert}
+	    /realtype 			{add}
+	    /gstatetype 		{false d.assert}
+	    /savetype 			{false d.assert}
+	    /integertype 		{add}
+	    /marktype 			{false d.assert}
+	>> exch get 		% key amount container proc
+	3 -1 roll exch 		% key container amount proc
+	exec store
 }.
 
 

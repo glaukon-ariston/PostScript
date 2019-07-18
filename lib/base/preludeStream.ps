@@ -16,11 +16,11 @@
 	2 index 	% initial
 	[ exch ] 
 	[/.initial /.step /.limit /.counter] let
-		.step 0 lt {{lt}} {{gt}} ifelse /.check ;
+		.step 0 lt {/lt} {/gt} ifelse cvx /.check ;
 		% - /.next num true | false
 		{
 			.counter 0 get 
-			dup .limit .check exec  {
+			dup .limit .check {
 				pop
 				false
 			} {

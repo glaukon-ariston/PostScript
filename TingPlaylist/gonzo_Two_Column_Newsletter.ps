@@ -1,0 +1,298 @@
+%!PS-Adobe-3.0
+%%Title: gonzo_Two_Column_Newsletter
+
+% generatePdf.bat gonzo_Two_Column_Newsletter
+
+(../lib/gonzo.ps) run
+gonzo begin
+gutility begin
+printerror
+nuisance begin
+
+% /// TWO COLUMN TEMPLATE ///
+% NOTE: using a grid gets tricky on multi-page
+% documents. To keep things simple, we will work full size
+% here. Individual figures can be on their own 10X grid.
+
+% Select your fonts. Font0 is the drop cap. Font1 is normal
+% text. Font2 is italic text. Font3 is bold text. Font= is the
+% end bullet. Font- is used in the figures. The first font
+% number is the width; the third is the height, and the sixth
+% is the amount of drop for a header ...
+
+/font0 /Palatino-Bold [42 0 0 40 0 -22] gonzofont
+/font1 /Palatino-Roman [10 0 0 10 0 0] gonzofont
+/font2 /Palatino-Italic [10 0 0 10 0 0] gonzofont
+/font3 /Palatino-Bold [10 0 0 10 0 -6] gonzofont
+/font= /ZapfDingbats [10 0 0 10 0 0] gonzofont
+/font- /ZapfDingbats [160 0 0 160 0 0] gonzofont
+
+% pick some template values
+
+/txtwide 240 def 	% width of text columns
+/yinc 11 def 		% line spacing
+/cstretch 0.2 def 	% minimum extra space between characters
+/sstretch 0 def 	% minimum extra space between spaces
+/maxsstretch 0.25 def 	% trip point for character stretching
+/maxcstretch 0.1 def 	% maximum allowable character stretching
+/dropcount 3 def 		% n umber of lines the drop cap drops
+/dropindent 29 def 		% ind entation for the drop cap
+/lastlinestretch 0.3 def 	% slight stretch to last paragraph line
+/colleft 60 def 			% first column left margin
+/colbot 98 def 			% column bottom position
+/coltop 700 def 		% column top position
+/numcolumns 2 def 		% number of columns
+/colspacing 260 def 	% width of columns
+/ypos coltop def 		% select top text line
+/pmnorm 10 def 			% paragraph margin
+
+% decide when to change columns. This particular colcheck
+% also makes room for figures and prints all but the last
+% page, so it is your pagemaker.
+
+/colcheck { 
+	makefigroom ypos colbot lt {
+		colnum numcolumns ge {
+			showpage 
+			/pagenum pagenum 1 add def
+			showfigs 
+			/ypos coltop yinc sub def 
+			/xpos colleft def
+			/colnum 1 def 
+			leftpage {false} {true} ifelse /leftpage exch def 
+			header 
+			footer 
+			makefigroom
+		} {
+			/colnum colnum 1 add def
+			/ypos coltop yinc sub def 
+			/xpos xpos colspacing add def
+			makefigroom
+		} ifelse
+	} if
+} def
+
+% setup your figures by using a dictionary. The Format is
+% [pagenum colmnum figheight figbot drawiftrue figname]
+
+/figdict 10 dict def 
+figdict begin
+	/fig1 [1 2 140 {colbot 101 add} true (clubs)] def
+	/fig2 [2 1 140 {colbot} true (spades)] def
+	/fig3a [4 1 140 {coltop 144	sub} true (shears)] def
+	/fig3b [4 2 140 {coltop 144 sub} false (shears)] def
+end
+
+% makefigroom lets the text flow around the figure spaces
+
+/makefigroom {
+	figdict { 
+		/figvalues exch def 
+		pop pagenum
+		figvalues 0 get eq {
+			colnum figvalues 1 get eq {
+				ypos
+				figvalues 3 get cvx exec 
+				figvalues 2 get cvx exec add le
+				ypos figvalues 3 get cvx exec ge and {
+					/ypos ypos figvalues
+					2 get cvx exec yinc div cvi 1 add yinc mul sub def
+				} if
+			} if
+		} if
+	} forall
+} def
+
+% showfigs goes through the dictionary and shows the
+% needed figures on the required pages
+
+/showfigs {
+	figdict {
+		/figvalues exch def 
+		pop pagenum
+		figvalues 0 get eq {
+			figvalues 4 get {
+				/hold2 exch def 
+				/hold1	exch def 
+				save 
+				/figsnapx exch def 
+				/colcheck {} def 
+				colleft
+				figvalues 1 get 1 sub colspacing mul add 
+				figvalues 3 get	cvx exec translate 
+				figvalues 5 get cvn cvx exec clear
+				figsnapx restore hold1 hold2
+			} if
+		} if
+	} forall
+} def
+
+% here are three sample figures. The 0,0 location of each
+% figure is in its lower left hand corner, no matter where it
+% is on which page. starts by drawing the box then centers
+% the figure in the box.
+
+/clubs {
+	line1 0 0 mt 138 u txtwide r 138 d txtwide l txtwide
+	2 div 11 (|-\250) cc
+} def
+
+/spades {
+	line1 0 0 mt 140 u txtwide r 140 d txtwide l
+	txtwide 2 div 15 (|-\253) cc 
+} def
+
+/shears {
+	line1 0 0 mt 137 u txtwide colspacing add r 137 d
+	txtwide colspacing add l txtwide colspacing add 2 div 13
+	(|F-$) cc 
+} def
+
+% setup the page making routine . . .
+
+/setup {
+	/colnum 1 def 
+	/xpos colleft def 
+	0 0 showfigs
+	firstpageheader {
+		header
+	} if 
+	firstpagefooter {
+		footer
+	} if
+} def
+
+/firstpageheader true def % default "false" to turn off.
+/firstpagefooter true def % default
+
+% select two macros to simplify drop caps and centered
+% drop text . . .
+
+/amacro {(Flzy0) stringmacro} def 	% start drop cap
+/bmacro {(iFy1) stringmacro} def 	% finish drop cap
+/cmacro {(zynC3) stringmacro} def 	% centered title
+/dmacro {(pF1) stringmacro} def 	% normal text
+
+% Here is a default header routine. Usually, you will want
+% the subject name on the left for left pages and the
+% publication name on the right for right pages . . .
+
+/header {
+	save 
+	/hsnap exch def 
+	mark 
+	/pmnorm 0 def 
+	/pm 0 def 
+	0 0 (|0 |0) cc 
+	line1 colleft coltop 4 add translate 
+	0 0 mt colspacing numcolumns 1 sub mul 
+	txtwide add r leftpage {
+		0 5 leftheader pagenumcheck cl
+	} { 
+		colspacing
+		numcolumns 1 sub mul 
+		txtwide add 5 rightheader
+		pagenumcheck cr
+	} ifelse
+	cleartomark
+	hsnap
+	restore
+} def
+
+% Here is a default footer routine. Usually, you will want
+% the page number on the left for left pages and the page
+% number on the right for right pages . . .
+
+/footer { 
+	save 
+	/fsnap exch def 
+	mark 
+	/pmnorm 0 def 
+	/pm 0 def 
+	0 0 (|0 |0) cc 
+	line1 colleft colbot 17 sub translate 
+	0 0 mt leftpage {
+		0 5 leftfooter pagenumcheck cl
+	} { 
+		colspacing
+		numcolumns 1 sub mul 
+		txtwide add 0.5 rightfooter
+		pagenumcheck cr
+	} ifelse 
+	cleartomark 
+	fsnap 
+	restore
+} def
+
+% Since the pagenumber can be any number of digits, we
+% have to get tricky here when we replace the "pagenum"
+% marker with the actual digits . . .
+
+/pagenumcheck {
+	/strr exch def 
+	strr (pagenum) search {
+		/prenum exch def 
+		pop 
+		/postnum exch def 
+		pagenum 5 string cvs 
+		/thenum exch def 
+		postnum length 
+		thenum length
+		add prenum length 
+		add string 
+		/numstring exch def
+		numstring 0 prenum putinterval 
+		numstring prenum length thenum putinterval 
+		numstring prenum length thenum length
+		add postnum putinterval numstring
+	} if
+} def
+
+% ////// END OF LAYOUT TEMPLATE ///////
+
+% Note #1: |= embedded escape command.
+
+% Note #2: Your host must be prevented from forcing extra
+% carriage returns as part of its formatting. If your host
+% insists on an extra carriage return every "n" characters,
+% then insert a reverse slash that is immediately followed
+% by a carriage return after each "n-3" or fewer characters
+% of continuous text. Or change to another program.
+
+% Note #3: Narrow, fill justified columns require several
+% post-justification editing passes for the best possible
+% appearance. Use hyphenation and rewording to get good
+% results.
+
+% ////// BEGIN DOCUMENT ///////////////
+
+% your actual document starts here , this is where you
+% make most changes . . .
+/leftheader (|2Alvin Snurdley) def
+/rightheader (|2My Newsletter) def
+/pagenum 1 def
+/leftfooter (|2- pagenum -) def
+/rightfooter (|2- pagenum -) def
+/firstpagefooter true def 			% false to cancel
+/firstpageheader true def 			% false to cancel
+/leftpage false def 				% this picks first page header and footer
+/dropcount 3 def 					% number of lines the drop cap drops
+/dropindent 29 def 					% indentation for the drop cap
+
+setup
+startgonzo
+|a
+T
+|b
+his fairly simple code routine does show you how you can do a two column layout which includes built-in figures and also can include headers and footers that are left-right sensitive. |p 
+While there are several fine layout programs available today, such as |2Ventura Publisher|1 and |2PageMaker|1, this text-only code shown here gives a very high quality result, is totally flexible, device independent, fast, and economical. 
+More importantly, you can easily switch in to or out of PostScript anytime, so there is no practical limit to what goes where on the page. 
+|c 
+Centered & Dropped Headings 
+|d 
+We can throw in a bunch of dummy paragraphs here that do not say much of anything, yet could get easily repeated over and over again so we can simplify all of your typing on this newsletter demo. 
+We can throw in a bunch of dummy paragraphs here that do not say much of anything, yet could get easily repeated over and over again so we can simplify all of your typing on this newsleter demo.|=F |x
+% and show the final page. Don’t skip the |x gonzo ender
+% above!
+
+showpage

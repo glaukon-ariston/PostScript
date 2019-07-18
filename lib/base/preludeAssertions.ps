@@ -1,0 +1,51 @@
+%!PS-Adobe-3.0
+%%Title: preludeAssertions.ps
+%%Creator: github.com/glaukon-ariston
+%%Copyright: Glaukon Ariston. All Rights Reserved
+%%Date: 22/05/2019
+%%LanguageLevel: 3
+%%EndComments
+
+
+%/preludeAssertions <<>> def
+%preludeAssertions begin
+
+
+% [a1..an] x /cons [x a1..an]
+[
+	{ [] 3 cons 2 cons 1 cons [1 2 3] deepEq }
+	{ () 67 cons 66 cons 65 cons (ABC) deepEq } 
+	{ {} /add ' cons 2 cons 1 cons {1 2 add} bind deepEq } 
+] d.assert!
+
+
+% [a1..an] x /append [a1..an x]
+[
+	{ [] 1 append 2 append 3 append [1 2 3] deepEq }
+	{ () 65 append 66 append 67 append (ABC) deepEq } 
+	{ {} 1 append 2 append /add ' append {1 2 add} bind deepEq } 
+] d.assert!
+
+
+% any any /deepEq bool
+[
+	{ {1 2.0 /arraytype} [1 2 (arraytype)] deepEq }
+	{ {1 2.0 [/arraytype {1 2 add}]} [1 2 [(arraytype) {1 2 add}]] deepEq not }
+	{ [1 2.0 [/arraytype {1 2 add}]] [1 2 [(arraytype) {1 2 add}]] deepEq } 
+] d.assert!
+
+
+
+
+%end	% preludeAssertions
+
+%%EndProlog
+
+%%BeginSetup
+%%EndSetup
+
+%%BeginScript
+%%EndScript
+
+%%Trailer
+%%EOF

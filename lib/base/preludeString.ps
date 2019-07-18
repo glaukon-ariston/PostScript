@@ -64,66 +64,118 @@ end} def
 } bind def
 
 
-% string whitespace /s.trimLeft string
+% container elem /s.in bool
+/s.in {
+    search { % post match pre
+        pop pop pop true
+    } { % string
+        pop false
+    } ifelse
+}.
+
+
+% PLRM page 27. TABLE 3.1 White-space characters
+% - /s.whitespace string
+/s.whitespace ( \t\f\r\n\000) .
+
+
+% string delimiters /s.trimLeft string
 /s.trimLeft {<<>>begin
-    [/str /whitespace]#=
-    false
-    0 1 str length 1 sub {
-        dup str exch 1 getinterval
-        whitespace exch search { % index post match pre
-            pop pop pop pop
-        } { % index string
-            pop 
-            /i exch def
-            pop true
-            exit
-        } ifelse
-    } for
+    /delimiters ;
+    /str ;
+    /lastNonSpace str length def 
+    /firstNonSpace 0 def
     {
-        str i dup str length exch sub getinterval   % substr(i, length-i)
-    } {()} ifelse
-end} bind def
+        firstNonSpace lastNonSpace ge {exit} if
+        delimiters
+            str firstNonSpace 1 getinterval 
+            s.in not {exit} if
+        /firstNonSpace 1 +=
+    } loop
+    str  firstNonSpace  lastNonSpace firstNonSpace sub  getinterval
+end}.
 
 
-% _ /s.whitespace string
-/s.whitespace ( \n\r\t) def
-
-
-% string /s.trimLeftWS string
-/s.trimLeftWS {
-    //s.whitespace s.trimLeft
-} bind def
-
-
-% string whitespace /s.trimRight string
+% string delimiters /s.trimRight string
 /s.trimRight {<<>>begin
-    [/str /whitespace]#=
-    false
-    0 1 str length 1 sub {
-        dup str exch 1 getinterval
-        whitespace exch search { % index post match pre
-            pop pop pop pop
-        } { % index string
-            pop 
-            /i exch def
-            pop true
-            exit
-        } ifelse
-    } for
+    /delimiters ;
+    /str ;
+    /lastNonSpace str length 1 sub def
     {
-        str 0 i 1 add getinterval   % substr(0, i+1)
-    } {()} ifelse
-end} bind def
+        lastNonSpace 0 lt {exit} if
+        delimiters
+            str lastNonSpace 1 getinterval 
+            s.in not {exit} if
+        /lastNonSpace 1 -=
+    } loop
+    /firstNonSpace 0 def
+    str  firstNonSpace  lastNonSpace firstNonSpace sub 1 add  getinterval
+end}.
 
 
-% string delimiters /split [string]
-/s.split {<<>>begin
+% string delimiters /s.trimBoth string
+/s.trimBoth {<<>> begin
+    /delimiters ;
+    /str ;
+    /lastNonSpace str length 1 sub . 
+    {
+        lastNonSpace 0 lt {exit} if
+        delimiters
+            str lastNonSpace 1 getinterval 
+            s.in not {exit} if
+        /lastNonSpace 1 -=
+    } loop
+    /firstNonSpace 0 def
+    {
+        firstNonSpace lastNonSpace ge {exit} if
+        delimiters
+            str firstNonSpace 1 getinterval 
+            s.in not {exit} if
+        /firstNonSpace 1 +=
+    } loop
+    str  firstNonSpace  lastNonSpace firstNonSpace sub 1 add  getinterval
+end}.
+
+
+% Assertions
+[
+    { () //s.whitespace s.trimLeft () deepEq }
+    { //s.whitespace //s.whitespace s.trimLeft () deepEq }
+    { (\t- filepath\n) //s.whitespace s.trimLeft (- filepath\n) deepEq }
+    { (nothing_to_be_trimmed) //s.whitespace s.trimLeft (nothing_to_be_trimmed) deepEq }
+
+    { () //s.whitespace s.trimRight () deepEq }
+    { //s.whitespace //s.whitespace s.trimRight () deepEq }
+    { (\t- filepath\n) //s.whitespace s.trimRight (\t- filepath) deepEq }
+    { (nothing_to_be_trimmed) //s.whitespace s.trimRight (nothing_to_be_trimmed) deepEq }
+
+    { () //s.whitespace s.trimBoth () deepEq }
+    { //s.whitespace //s.whitespace s.trimBoth () deepEq }
+    { (\t- filepath\n) //s.whitespace s.trimBoth (- filepath) deepEq }
+    { (nothing_to_be_trimmed) //s.whitespace s.trimBoth (nothing_to_be_trimmed) deepEq }
+] d.assert!
+
+
+% string delimiters /s.split* [words] [separations]
+/s.split* {<<>>begin
     [/sentence /delimiters]#=
     /left 0 def
     /right 0 def
-    /result [] def
     /limit sentence length 1 sub def
-    {
+
+    % if the string starts with a delimiter, then add an empty element to the words list
+    /words 
+        delimiters
+        sentence 0 1 getinterval
+        search { % post match pre
+            pop pop pop [()]
+        } { % string
+            pop [] 
+        } ifelse
+        def
+    /separations [].
+
+    { % loop
         % skip delimiters (find the beginning of a word)
         false
         right 1 limit {
@@ -133,11 +185,22 @@ end} bind def
             } { % index string
                 pop 
                 /left exch def
-                pop true 
+                pop true
+                % check if we have seen sonme delimiters, then record the separation 
+                left right gt {
+                    sentence right left right sub getinterval
+                    separations exch append /separations ;
+                } if
                 exit
             } ifelse
         } for
-        not {exit} if   % exit the loop if we reached the end of the sentence
+        % exit the loop if we reached the end of the sentence
+        not {
+            words () append /words ;
+            sentence right limit right sub 1 add getinterval
+            separations exch append /separations ;
+            exit
+        } if
         
         % skip non-delimiters (find the end of the word)
         false
@@ -155,13 +218,81 @@ end} bind def
         not {/right limit 1 add def} if % terminate the word if we reached the end of the sentence
 
         % append the new word to the list
-        [ result aload pop
+        words 
             sentence left right left sub getinterval
-        ] /result exch def
-    } loop
-    result
-end} bind def
+            append /words ;
 
+        % terminate if we reached the endo of the sentence
+        right limit gt {exit} if
+    } loop
+    words separations
+end}.
+
+
+% string delimiters /s.split [words] [separations]
+/s.split {
+    1 index length 0 eq {
+        pop pop [] []
+    } {
+        s.split*
+    } ifelse
+}.
+
+
+% Assertions
+[
+    { [() //s.whitespace s.split] [[] []] deepEq } 
+    { [//s.whitespace //s.whitespace s.split] [[() ()] [//s.whitespace]] deepEq } 
+    { [(The_one_and_only) //s.whitespace s.split] [[(The_one_and_only)] []] deepEq } 
+    { [(\nThe_second_item) //s.whitespace s.split] [[() (The_second_item)] [(\n)]] deepEq } 
+    { [(\nThe_second_item\r) //s.whitespace s.split] [[() (The_second_item) ()] [(\n) (\r)]] deepEq } 
+    { [(War is Peace, Freedom is Slavery, Ignorance is Strength) //s.whitespace s.split] [[(War) (is) (Peace,) (Freedom) (is) (Slavery,) (Ignorance) (is) (Strength)] [( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ]] deepEq } 
+    { [(War is Peace, Freedom is Slavery, Ignorance is Strength) //s.whitespace (,) s.append s.split] [[(War) (is) (Peace) (Freedom) (is) (Slavery) (Ignorance) (is) (Strength)] [( ) ( ) (, ) ( ) ( ) (, ) ( ) ( ) ]] deepEq }
+    { [(C:\\Tata\\Audio\\Glazba\\ProfilKlett\\Glazbena petica_Glazbeni primjeri 1\\01 Track 1.mp3) (\\) s.split] [[(C:) (Tata) (Audio) (Glazba) (ProfilKlett) (Glazbena petica_Glazbeni primjeri 1) (01 Track 1.mp3)] [(\\) (\\) (\\) (\\) (\\) (\\)]] deepEq }
+] d.assert!
+
+
+% [(a) (b) ... (z)] separator /s.join (aSbS...Sz)
+/s.join { 
+    1 index length 0 eq { %ifelse
+        % zero length input
+        pop pop ()
+    } {
+        % calculate the final string length
+        0 2 index {
+            length add
+            1 index length add
+        } forall
+        1 index length sub
+        string       % [s] sep string
+        % copy the first element into the string
+        3 -1 roll uncons                        % sep string [a2..an] a1
+        dup 3 index 0 3 -1 roll putinterval     % sep string [a2..an] a1
+        length exch                             % sep string index [a2..an]
+        {                       % sep string index s
+            4 copy pop 3 -1 roll    % sep string index s string index sep
+            putinterval             % sep string index s
+            exch 3 index length add exch % sep string index s
+            
+            % now do the same thing again for the element string
+            3 copy              % sep string index s string index s
+            putinterval         % sep string index s
+            length add          % sep string index
+        } forall 
+        % sep string index
+        pop exch pop
+    } ifelse
+}.
+
+
+% Assertions
+[
+    { [] (\n) s.join () deepEq } 
+    { [()] (\n) s.join () deepEq } 
+    { [() ()] (\n) s.join (\n) deepEq } 
+    { [() () ()] (\n) s.join (\n\n) deepEq } 
+    { [(War is Peace) (Freedom is Slavery) (Ignorance is Strength)] (, ) s.join (War is Peace, Freedom is Slavery, Ignorance is Strength) deepEq } 
+] d.assert!
 
 
 %end    % preludeString

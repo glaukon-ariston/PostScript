@@ -1,0 +1,426 @@
+%!PS-Adobe-3.0
+%%Title: tingPlaylist.ps
+%%BoundingBox: 0 0 842 597
+%%DocumentPaperSizes: A4
+%%DocumentMedia: A4 842 597 0 () ()
+%%Orientation: Landscape
+%%Creator: github.com/glaukon-ariston
+%%Copyright: (C) 2019 Glaukon Ariston. All Rights Reserved
+%%Date: 13/05/2019
+%%LanguageLevel: 3
+%%EndComments
+
+% generatePdf.bat "Glazbena petica_TextBook" 3
+% gswin64c -dNOPAUSE -dCompatibilityLevel#1.4 -dOSTACKPRINT -dESTACKPRINT -sFONTPATH#"C:/Windows/Fonts"
+% clear (tingPlaylist.ps) run (../lib/base/db5.ps) run traceon
+
+/CopyrightStatement (Copyright 2019 Glaukon Ariston) def
+
+%%BeginProlog
+
+userdict begin
+
+(../lib/gonzo.ps) run
+% An introduction to gonzo justification for large blocks of text.
+gutility begin              % turn on the gonzo utilities
+nuisance begin              % turn on the nuisance commands
+printerror                  % turn on the printing error trapper  
+gonzo begin                 % turn on the gonzo justification 
+
+(../lib/base/prelude.ps) run
+prelude begin
+
+(../lib/ting/tingOid.ps) run
+
+%%EndProlog
+
+
+%%BeginSetup
+
+A4Landscape /PageSize ;
+
+% http://pages.cs.wisc.edu/~rjl/landscape/
+<< /PageSize PageSize >> setpagedevice
+
+
+/inputYaml where { %ifelse
+	pop
+} {
+	/inputYaml (Glazbena petica_TextBook.ps) .
+} ifelse
+
+
+/columnCount where { %ifelse
+	pop
+} {
+	/columnCount 2 .
+} ifelse
+
+
+/titleSize 18 .
+/subtitleSize 14 .
+/textSize 12 .
+
+/oidWidth //titleSize 2 mul def
+/oidHeight //titleSize def
+/oidMargin //oidWidth //textSize add def
+
+/margin [0.5 inch  0.5 inch oidMargin add  0.5 inch  0.5 inch]. 		% [top left bottom right]
+/workArea [[PageSize [margin !l margin !r add margin !t margin !b add]] {sub} a.forall] .
+
+/titleFont {/Calibri findfont titleSize scalefont setfont} .
+/Calibri /SansSerif1250 Windows1250 newFontEncoding
+
+
+%======================================================================
+% Gonzo CALLOUT JUSTIFY MODES
+
+% - save save 			% Create VM snapshot
+% save restore -		% Restore VM snapshot
+
+% cl accepts an input of form xpos ypos (message) cl and shows it
+% at xpos left and within xpos + textwide right.
+% xpos ypos (message) /cl -
+/textAlignLeft {
+	/linestring linestring2 store 
+	/justx (justL) store 
+	stringgonzo 
+}. 
+
+% cf accepts an input of form xpos ypos (message) cf and shows it
+% flush left at xpos and flush right at xpos + textwide.
+% xpos ypos (message) /cf -
+/textJustify {
+	/linestring linestring2 store 
+	/justx (justF) store 
+	stringgonzo 
+}.
+
+% cc accepts an input of form xpos ypos (message) cc and centers it
+% on xpos. txtwide IS IGNORED, AND ANY WIDTH WILL GET CENTERED.
+% xpos ypos (message) /cc -
+/textCentre {
+	/linestring linestring2 store 
+	/txtwide 5000 store 
+	/justx (justC) store 
+	/pmrun 0 store 
+	stringgonzo 
+}.
+
+% cr accepts an input of form xpos ypos (message) cr and sets it
+% flush right against xpos. txtwide IS IGNORED, AND ANY WIDTH
+% WILL SET FLUSH RIGHT.
+% xpos ypos (message) /cr -
+/textAlignRight {
+	/linestring linestring2 store 
+	/txtwide 5000 store 
+	/justx (justR) store 
+	/pmrun 0 store 
+	% 5000 sub /xpos exch store 
+	stringgonzo 
+}.
+
+
+% lineSpacing margin columns /gonzoTemplate dict
+/gonzoTemplate { 
+	[/.lineSpacing /.margin /.columns] let
+		/.workArea [[PageSize [.margin !l .margin !r add .margin !t .margin !b add]] {sub} a.forall] .
+		/.columnInterSpace .margin !l .             % spacing between columns
+		/.txtwide .workArea !x  .columns 1 sub .columnInterSpace mul sub  .columns div .
+		/.ytop PageSize !y .margin !t sub .lineSpacing sub .             % spacing between columns
+		<<
+		    /ytop .ytop				% base of top text line 
+			/ybot .margin !b        % bottom reference for template
+		    /ypos .ytop             % select top text line
+		    /xpos .margin !l        % left margin
+		    /yinc .lineSpacing      % line spacing
+
+		    /cstretch  0.02         % minimum extra space between characters  
+		    /sstretch 0             % minimum extra space between spaces
+		    /maxsstretch 0.25       % trip point for character stretching     
+		    /maxcstretch 0.1        % maximum allowable character stretching
+		    /dropcount 3            % number of lines the drop cap drops
+		    /dropindent 5           % indentation for the drop cap
+		    /lastlinestretch 0.006  % slight stretch to last paragraph line
+
+		    /overstrikechar (\320)  % overstrike character 
+		    /overstrikeht 0.7       % vertical shift of overstrike character
+
+		    /pm .lineSpacing        % normal paragraph indent
+			/ypara 0                % additional v space at paragraph end 
+		    /kern 0.1               % one point of custom kerning
+			
+		    /txtwide .txtwide 		% width of column
+			/colspace .txtwide .columnInterSpace add            % spacing between columns
+
+			% additional values used by this template
+			/column# 1
+			/firstpagespecial false       % special treatment for first page?
+			/lmpos .margin !l             % horizontal left margin
+			/numcolumns .columns          % number of columns
+			/oddpageright true            % are odd numbered pages on the right?
+			/rightpage false              % start with righthand page?
+			/pagenum 1                    % running pagenumber
+
+			% colcheck does all the work in a pagemaker. It is automatically called
+			% at the start of each new printable line. It can make room for figures, etc.
+			/colcheck {
+				ypos ybot lt {
+					column# numcolumns ge {
+						showpage 
+						/ypos ytop store 
+						/xpos lmpos store 
+						/column# 1 store 
+						% header footer
+					} { 
+						/ypos ytop store 
+						/xpos xpos colspace add store 
+						/column# column# 1 add store
+					} ifelse
+				} if
+			} 
+
+			% This particular header picks different formats for left and right pages
+			/header {
+				pagenum cvi 2 mod 0 eq 
+				rightpage {
+					not
+				} if 
+				{ leftheader } { rightheader } ifelse 
+				/pagenum pagenum 1 add store
+			}
+
+			/headerstripe {
+				gsave 
+				xpos ytop 19 add moveto 
+				colspace numcolumns 1 sub mul txtwide add 0 rlineto 
+				0.5 setlinewidth stroke
+			}
+
+			/leftheader {
+				gsave 
+				spacewidth font2 pagenum (xxxxxx) cvs dup length 5 add string 
+				dup 0 (page ) putinterval 
+				dup 5 3 index putinterval 
+				exch pop
+				lmpos exch ytop yinc 2.5 mul add exch 
+				cl 
+				grestore 
+				headerstripe 
+				/spacewidth exch def
+			}
+
+			/rightheader {
+				gsave 
+				spacewidth font2 pagenum (xxxxxx) cvs dup length 5 add string 
+				dup 0 (page ) putinterval 
+				dup 5 3 index putinterval 
+				exch pop
+				lmpos numcolumns 1 sub colspace mul add txtwide add exch ytop 25 add exch 
+				cr 
+				grestore 
+				headerstripe 
+				/spacewidth exch def
+			}
+
+			/firstpageheader {}          % nothing special today
+
+			/footer {
+				gsave 
+				xpos ybot 6 sub moveto 
+				colspace numcolumns 1 sub mul txtwide add 0 rlineto 
+				1.5 setlinewidth 
+				stroke
+			}
+
+			/templatestartup {
+				templatefonts 
+				font1 
+				/column# 1 store 
+				/xpos lmpos store 
+				/ypos ytop store 
+				/gonzojust true store 
+				/rslashok true store 
+				% header footer
+			}
+
+			/templatefonts {    % Remember: all fonts MUST defer till run time!
+				/font0 /SansSerif1250 titleSize gonzofont  			% drop cap
+				/font1 /SansSerif1250 textSize gonzofont           	% main text
+				/font2 /SansSerif1250 textSize gonzofont           	% main italic
+				/font3 /SansSerif1250 textSize gonzofont           	% main bold
+				/font4 /SansSerif1250 titleSize gonzofont           % capnum text
+				/font5 /SansSerif1250 subtitleSize gonzofont        % capnum italic
+				/font6 /Times-Bold   9 gonzofont                   	% capnum bold 
+				/font7 /Times-Bold  [9.75 0 0 9.5 0 -6] gonzofont  	% lowered subheader
+				/font= /Symbol 9.75 gonzofont                      	% its greek to me
+				/font- /ZapfDingbats  [9 0 0 9 0 4] gonzofont      	% dingbats
+			}
+		>>
+	end
+}.
+
+
+% /gonzofont {
+% 	dup type cvlit /arraytype eq {
+% 		exch findfont exch makefont
+% 	} {
+% 		exch findfont exch scalefont
+% 	} ifelse 
+% 	setfont 
+% 	mark 
+% 		/spacewidth 
+% 			( ) stringwidth pop 
+% 			/cstretch cvx 
+% 			/add cvx 
+% 			/sstretch cvx 
+% 			/add cvx 
+% 			/def cvx 
+% 		currentfont 
+% 		dup backcdict exch 
+% 		(F?) dup  
+% 		1 14 index 
+% 		(xxxxx) cvs
+% 		4 get put put 
+% 		/setfont cvx 
+% 	] cvx def
+% } def
+
+
+titleSize 1.1 mul  margin  columnCount  gonzoTemplate starttemplate
+
+
+%======================================================================
+
+
+% https://color.adobe.com/create/color-wheel
+%/cmykBackground [0 0 0 1] def
+
+%%EndSetup
+
+
+% filepath /parseMapFile [[tingId mp3path]]
+/parseMapFile { <<>> begin
+	mkReadline /nextLine ;
+	[] /data ;
+	{ % loop
+		nextLine exec /notEof ;
+		% ignore empty lines
+		dup length 0 gt { % ifelse
+			% string /token post any true | false
+			token d.assert /tingId ; 
+			/mp3path ;
+			mp3path (\\) s.split pop last 
+			(.) s.split pop unsnoc 			% [a1..an-1] an
+			(mp3) eq {
+				last /mp3name ;
+				/data [tingId mp3name] +=
+			} {
+				% ignore non mp3 lines (e.g. 15000 main)
+				pop
+			} ifelse
+		} {
+			% skip empty lines
+			pop
+		} ifelse
+		notEof not {exit} if
+	} loop
+	data
+end}.
+
+
+%%BeginScript
+
+%% Main
+[CopyrightStatement (/inputYaml) inputYaml] {printLn} forall
+
+/main { <<>>begin
+	% load the postscript translated yaml file data
+	inputYaml run /yaml ;
+
+	[/PageSize] d.showKeys
+	[/xpos /ypos /ytop /ybot] (pt) d.showLabels 
+	[/font1] d.showKeys
+
+	tingOid begin
+		testTingOidGeneration
+		%1200 2 /squareDot defineConstants
+		1200 1.3 /squareDot defineConstants
+	end % tingOid
+
+	/bookId yaml /bookId get .
+	/bookIdStr bookId d.toString (0) 5 s.padLeft .
+	txtwide
+	/txtwide workArea !x store
+		% draw the book title
+		(4) stringmacro yaml /description get /name get textAlignLeft
+		(5) stringmacro /yinc subtitleSize 1.1 mul store
+		[
+			[/publisher /author /bookVersion /url ] {
+				yaml /description get  exch get 
+			} forall
+		] (, ) s.join textAlignLeft
+
+		% draw the book selection pattern
+		[/xpos /ypos /ytop /ybot] (pt) d.showLabels 
+		/r xpos titleSize sub PageSize !y ypos sub titleSize sub min 2 div .
+		/x titleSize 2 div .
+		/y ypos titleSize 2 div add .
+		[/x /y /r] (pt) d.showLabels
+		tingOid begin
+			gsave
+			newpath
+			x r add y r add r 0 360 arc clip
+			bookId tingId2Oid x y  r 2 mul  dup  drawOidImage
+			grestore
+		end % tingOid
+
+		(l) stringmacro
+		% all further letter setting will be done below the title line
+		/ytop ypos store
+	/txtwide exch store
+
+	[(../../github/ting-reveng/books/) bookIdStr (/) bookIdStr (_en.map)] s.concat
+		parseMapFile
+	/mapTingIdMp3 ;
+	mapTingIdMp3 d.toString printLn
+
+	/tingId null def
+	/mp3name null def
+	(1) stringmacro
+	/yinc titleSize 1.1 mul store
+	mapTingIdMp3 {
+		[/tingId /mp3name] unpack!
+		mp3name printLn
+		% draw the song/audio selection pattern
+		tingOid begin
+			tingId tingId2Oid  xpos oidMargin sub  ypos 
+				oidWidth oidHeight drawOidImage
+		end % tingOid
+		mp3name textAlignLeft
+		(l) stringmacro
+	} forall
+end} .
+
+
+% generatePdf.bat "Glazbena petica_TextBook" 3
+% gswin64c -dNOPAUSE -dCompatibilityLevel#1.4 -dOSTACKPRINT -dESTACKPRINT -sFONTPATH#"C:/Windows/Fonts"
+% clear (tingPlaylist.ps) run (../lib/base/db5.ps) run traceon
+(Main\n) print
+/__main__ { 
+	main 
+	% showpage
+ 	end % gonzoTemplate
+	end % prelude
+	end % gonzo
+	end % nuisance
+	end % gutility
+	end % userdict
+} .
+
+__main__
+
+%%EndScript
+
+%%Trailer
+%%EOF

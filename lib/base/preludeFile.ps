@@ -49,6 +49,72 @@ end} def
 end} def
 
 
+% filepath /mkReadline  (/nextLine line notEof)
+/mkReadline { <<>> begin
+	(r) file /fileHandle ;
+
+	% notEof line :nextLine
+	{
+		% file string /readline substring notEof  		-- Read line from file into string
+		fileHandle dup 4096 string readline 
+		% fileHandle substring bool
+		&231 1 index
+		{ % ifelse
+			pop
+		} {
+			closefile
+		} ifelse
+	} a.localBind
+end}.
+
+
+% line /parseYamlLine fieldValue fieldName
+/parseYamlLine { <<>> begin
+	dup (:) s.split 	% words separations
+	length 0 eq { % ifelse
+		% no colon found, try '-' (list item)
+		pop
+		(-) s.split
+		pop
+		dup length 2 eq d.assert 	% two items expected
+		dup !0 //s.whitespace s.trimBoth () eq d.assert		% the first item is whitespace only (e.g. a tab)
+		{//s.whitespace s.trimBoth} f.map !_
+	} {
+		exch pop
+		% Colon found. Assume 'field: value' format. 
+		dup length 2 eq d.assert 	% assert only one colon
+		{//s.whitespace s.trimBoth} f.map !_
+	} ifelse
+end}.
+
+
+% Assertions
+[
+    { [(bookId: 8207) parseYamlLine] [(bookId) (8207)] deepEq } 
+    { [(mp3s: ) parseYamlLine] [(mp3s) ()] deepEq } 
+%    { [(    - C:\\Tata\\Audio\\Glazba\\ProfilKlett\\Glazbena petica_Glazbeni primjeri 1) parseYamlLine] [() (C:\\Tata\\Audio\\Glazba\\ProfilKlett\\Glazbena petica_Glazbeni primjeri 1)] deepEq } 
+] d.assert!
+
+
+% filepath /parseYaml  <<dict>>
+/parseYaml { <<>> begin
+	mkReadline /nextLine ;
+	() /lastField ;
+	<<>> /yaml ;
+	{ % loop
+		nextLine exec /notEof ;
+		% ignore empty lines
+		dup length 0 gt { % ifelse
+			parseYamlLine
+		} {
+			% skip empty lines
+			pop
+		} ifelse
+		notEof not {exit} if
+	} loop
+end}.
+
+
 %end	% preludeFile
 
 %%EndProlog

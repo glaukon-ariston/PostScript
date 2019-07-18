@@ -7,7 +7,7 @@
 %%EndComments
 
 % TO DEBUG DO THE FOLLOWING
-% clear (prelude.ps) run prelude begin (db5.ps) run traceon
+% clear (../lib/base/prelude.ps) run prelude begin (../lib/base/db5.ps) run traceon
 
 
 /prelude <<>> def
@@ -16,11 +16,11 @@ prelude begin
 (../lib/base/preludeBootstrap.ps) run
 (../lib/base/preludeDebug.ps) run
 (../lib/base/preludeStack.ps) run
+(../lib/base/preludeStream.ps) run
 (../lib/base/preludeArray.ps) run
 (../lib/base/preludeList.ps) run
 (../lib/base/preludeDict.ps) run
 (../lib/base/preludeFn.ps) run
-(../lib/base/preludeStream.ps) run
 (../lib/base/preludeString.ps) run
 (../lib/base/preludeMath.ps) run
 (../lib/base/preludeUnits.ps) run
@@ -28,6 +28,7 @@ prelude begin
 (../lib/base/preludeFont.ps) run
 (../lib/base/preludeFile.ps) run
 (../lib/base/preludeError.ps) run
+(../lib/base/preludeAssertions.ps) run
 
 end	% prelude
 

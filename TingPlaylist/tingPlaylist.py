@@ -18,8 +18,11 @@ import shlex
 
 
 GhostScript = 'gswin64c'
-#yamlFile = r'C:\app\dev\hp\projects\github\ting-reveng\books\Glazbena petica_TextBook.yaml'
-yamlFile = r'C:\boris\app\dev\hp\projects\github\ting-reveng\books\Glazbena petica_TextBook.yaml'
+rootDir = 'C:\\app\\dev\\hp\\projects\\github\\ting-reveng\\books\\'
+#rootDir = 'C:\\boris\\app\\dev\\hp\\projects\\github\\ting-reveng\\books\\'
+#yamlFile = rootDir + Glazbena petica_TextBook.yaml'
+yamlFile = rootDir + 'Bullhit.yaml'
+#yamlFile = rootDir + 'Frederick Noad_Solo Guitar Playing 1.yaml'
 
 
 def postscriptStringEscape(s):

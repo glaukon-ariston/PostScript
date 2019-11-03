@@ -239,6 +239,18 @@ end}.
 }.
 
 
+% string n /s.splitAt [a1..an] [rest]
+/s.splitAt {
+    1 index length 1 index le {
+        pop ()
+    } {
+        1 index 0 2 index getinterval   % string n [a1..an]
+        3 1 roll                        % [a1..an] string n
+        1 index length 1 index sub getinterval
+    } ifelse
+}.
+
+
 % Assertions
 [
     { [() //s.whitespace s.split] [[] []] deepEq } 
@@ -249,6 +261,8 @@ end}.
     { [(War is Peace, Freedom is Slavery, Ignorance is Strength) //s.whitespace s.split] [[(War) (is) (Peace,) (Freedom) (is) (Slavery,) (Ignorance) (is) (Strength)] [( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ]] deepEq } 
     { [(War is Peace, Freedom is Slavery, Ignorance is Strength) //s.whitespace (,) s.append s.split] [[(War) (is) (Peace) (Freedom) (is) (Slavery) (Ignorance) (is) (Strength)] [( ) ( ) (, ) ( ) ( ) (, ) ( ) ( ) ]] deepEq }
     { [(C:\\Tata\\Audio\\Glazba\\ProfilKlett\\Glazbena petica_Glazbeni primjeri 1\\01 Track 1.mp3) (\\) s.split] [[(C:) (Tata) (Audio) (Glazba) (ProfilKlett) (Glazbena petica_Glazbeni primjeri 1) (01 Track 1.mp3)] [(\\) (\\) (\\) (\\) (\\) (\\)]] deepEq }
+    { [(123456) 7 s.splitAt] [(123456) ()] deepEq }
+    { [(123456.mp3) 6 s.splitAt] [(123456) (.mp3)] deepEq }
 ] d.assert!
 
 

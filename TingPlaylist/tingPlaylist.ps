@@ -65,7 +65,7 @@ A4Landscape /PageSize ;
 /oidHeight //titleSize def
 /oidMargin //oidWidth //textSize add def
 
-/margin [0.5 inch  0.5 inch oidMargin add  0.5 inch  0.5 inch]. 		% [top left bottom right]
+/margin [0.5 inch  0.75 inch oidMargin add  0.5 inch  0.75 inch]. 		% [top left bottom right]
 /workArea [[PageSize [margin !l margin !r add margin !t margin !b add]] {sub} a.forall] .
 
 /titleFont {/Calibri findfont titleSize scalefont setfont} .
@@ -311,9 +311,9 @@ titleSize 1.1 mul  margin  columnCount  gonzoTemplate starttemplate
 			token d.assert /tingId ; 
 			/mp3path ;
 			mp3path (\\) s.split pop last 
-			(.) s.split pop unsnoc 			% [a1..an-1] an
-			(mp3) eq {
-				last /mp3name ;
+			dup length (.mp3) length sub s.splitAt 
+			(.mp3) eq {
+				/mp3name ;
 				/data [tingId mp3name] +=
 			} {
 				% ignore non mp3 lines (e.g. 15000 main)
@@ -344,8 +344,8 @@ end}.
 
 	tingOid begin
 		testTingOidGeneration
-		%1200 2 /squareDot defineConstants
-		1200 1.3 /squareDot defineConstants
+		1200 2 /squareDot defineConstants
+		%1200 1.3 /squareDot defineConstants
 	end % tingOid
 
 	/bookId yaml /bookId get .
@@ -409,7 +409,7 @@ end} .
 (Main\n) print
 /__main__ { 
 	main 
-	% showpage
+	showpage
  	end % gonzoTemplate
 	end % prelude
 	end % gonzo
